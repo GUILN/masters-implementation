@@ -30,3 +30,25 @@ conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/ma
 
 conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 ```
+
+### Installing OpenMM
+
+#### Linux
+```bash
+# Create clean conda environment
+conda create -n masters python=3.10 -y
+conda activate masters
+
+# Install PyTorch (CPU only)
+pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0
+
+# Install OpenMMLab package manager
+pip install -U openmim
+
+# Install matching versions of mmcv and mmdet
+mim install "mmcv==2.1.0"
+mim install "mmdet==3.2.0"
+
+# Test instalation
+python -c "import torch, mmcv, mmdet; print(torch.__version__, mmcv.__version__, mmdet.__version__)"
+```
