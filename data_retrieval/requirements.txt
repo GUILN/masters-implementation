@@ -1,0 +1,2 @@
+# Core dependencies for data extraction CLI
+sentry-sdk>=1.0.0
