@@ -9,8 +9,15 @@ except ImportError:
     SENTRY_AVAILABLE = False
 
 class ApplicationLogger:
-    def __init__(self, loglevel: int = logging.INFO, logfile: Optional[str] = None, log_to_stdout: bool = True, sentry_dsn: Optional[str] = None):
-        self.logger = logging.getLogger("SimpleLogger")
+    def __init__(
+        self,
+        name: str = "SimpleLogger",
+        loglevel: int = logging.INFO,
+        logfile: Optional[str] = None,
+        log_to_stdout: bool = True,
+        sentry_dsn: Optional[str] = None
+    ):
+        self.logger = logging.getLogger(name)
         self.logger.setLevel(loglevel)
         formatter = Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
