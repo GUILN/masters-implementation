@@ -1,4 +1,4 @@
-
+import os
 from config_manager import ExtractionConfig
 from app_logging.application_logger import ApplicationLogger
 
@@ -15,8 +15,9 @@ class CommonSetup:
         # Return existing logger if already initialized
         if _logger_initialized and _logger_instance is not None:
             return _logger_instance
-       
-        config = ExtractionConfig() 
+      
+        process_id = os.getpid() 
+        config = ExtractionConfig()
         log_settings = config.logging_settings
         sentry_settings = config.sentry_settings
 
@@ -24,7 +25,7 @@ class CommonSetup:
         logger = ApplicationLogger(
             name="data_extraction",
             loglevel=log_settings['level'],
-            logfile=log_settings['log_file'],
+            logfile=f"{log_settings['log_file']}.{process_id}.log",
             log_to_stdout=True,
             sentry_dsn=sentry_settings['dsn']
         )

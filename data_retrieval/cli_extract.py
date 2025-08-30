@@ -4,15 +4,18 @@ Command-line interface for video extraction with configuration override.
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
-from typing import Any, List
+import time
 from common_setup import CommonSetup
 from config_manager import ExtractionConfig
 from app_logging.application_logger import ApplicationLogger
 
 from dataset_path_manager.dataset_path_manager_factory import DatasetPathManagerFactory, DatasetType
+from parallelization.parallelization_service import ParallelizationService
 from retrieval.frame_retriever import FrameRetriever
+import multiprocessing as mp
 
 def create_parser() -> argparse.ArgumentParser:
     """Create command line argument parser."""
@@ -186,14 +189,18 @@ def extract_frames_data(config: ExtractionConfig, logger) -> str:
         frame_rate=frame_settings['frame_rate_per_second'],
     )
     logger.info("Running in the first video for testing")
-    test_video = videos_paths[0]
     try:
-        frame_retriever.extract_frames(
-            video_path=test_video.video_path,
-            output_dir=test_video.output_path,
-        )
+        # get time
+        start_time = time.time()
+        logger.info(f"Running {len(videos_paths)} tasks in parallel using {os.cpu_count()} workers.")
+        with mp.Pool(processes=os.cpu_count()) as pool:
+            results = pool.starmap(frame_retriever.extract_frames, [(video_path.video_path, video_path.output_path + "_frames") for video_path in videos_paths])
+        logger.info(f"Parallel execution completed. Processed {len(results)} results.")
+        # start timer
+        elapsed_time = time.time() - start_time
+        logger.info(f"Frame extraction completed in {elapsed_time:.2f} seconds.")
     except Exception as e:
-        logger.error(f"Error extracting frames from {test_video.video_path}: {e}")
+        logger.error(f"Error extracting frames: {e}")
 
 
    
