@@ -37,18 +37,21 @@ class ApplicationLogger:
         else:
             self.sentry_enabled = False
 
-    def info(self, msg: str):
-        self.logger.info(msg)
+    def debug(self, msg: str, **kwargs):
+        self.logger.debug(msg, **kwargs)
 
-    def warning(self, msg: str):
-        self.logger.warning(msg)
+    def info(self, msg: str, **kwargs):
+        self.logger.info(msg, **kwargs)
 
-    def error(self, msg: str):
-        self.logger.error(msg)
+    def warning(self, msg: str, **kwargs):
+        self.logger.warning(msg, **kwargs)
+
+    def error(self, msg: str, **kwargs):
+        self.logger.error(msg, **kwargs)
         if self.sentry_enabled:
             sentry_sdk.capture_message(msg, level="error")
 
-    def exception(self, msg: str):
-        self.logger.exception(msg)
+    def exception(self, msg: str, **kwargs):
+        self.logger.exception(msg, **kwargs)
         if self.sentry_enabled:
             sentry_sdk.capture_exception()
