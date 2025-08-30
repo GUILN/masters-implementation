@@ -1,15 +1,17 @@
 import cv2
 import os
-from app_logging.application_logger import ApplicationLogger
+
+from common_setup import CommonSetup
+
+
+logger = CommonSetup.get_logger()
 
 class FrameRetriever:
     def __init__(
         self,
-        logger: ApplicationLogger,
         frame_rate: int=8,
     ):
         self._frame_rate = frame_rate
-        self._logger = logger
 
     def extract_frames(
         self,
@@ -28,7 +30,7 @@ class FrameRetriever:
         # open video
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
-            self._logger.error(f"Error opening video file: {video_path}")
+            logger.error(f"Error opening video file: {video_path}")
             return
         
         video_fps = cap.get(cv2.CAP_PROP_FPS)
@@ -38,7 +40,7 @@ class FrameRetriever:
         saved_count = 0
 
         video_prefix = os.path.splitext(os.path.basename(video_path))[0]
-        self._logger.info(f"🎬 Extracting frames from {video_path} at {self._frame_rate} FPS into {output_dir}")
+        logger.info(f"🎬 Extracting frames from {video_path} at {self._frame_rate} FPS into {output_dir}")
 
         while True:
             ret, frame = cap.read()
@@ -53,5 +55,5 @@ class FrameRetriever:
             frame_count += 1
             
         cap.release()
-        self._logger.info(f"✅ Extracted {saved_count} frames from {video_path} into {output_dir}")
+        logger.info(f"✅ Extracted {saved_count} frames from {video_path} into {output_dir}")
         

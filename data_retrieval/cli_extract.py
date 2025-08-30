@@ -12,6 +12,7 @@ from config_manager import ExtractionConfig
 from app_logging.application_logger import ApplicationLogger
 
 from dataset_path_manager.dataset_path_manager_factory import DatasetPathManagerFactory, DatasetType
+from retrieval.frame_retriever import FrameRetriever
 
 def create_parser() -> argparse.ArgumentParser:
     """Create command line argument parser."""
@@ -179,6 +180,21 @@ def extract_frames_data(config: ExtractionConfig, logger) -> str:
     logger.info(f"Found {len(videos_paths)} videos to process.")
     for video_path in videos_paths:
         logger.debug(f"Found video path: {video_path}")
+
+    logger.info("Starting frame extraction")
+    frame_retriever = FrameRetriever(
+        frame_rate=frame_settings['frame_rate_per_second'],
+    )
+    logger.info("Running in the first video for testing")
+    test_video = videos_paths[0]
+    try:
+        frame_retriever.extract_frames(
+            video_path=test_video.video_path,
+            output_dir=test_video.output_path,
+        )
+    except Exception as e:
+        logger.error(f"Error extracting frames from {test_video.video_path}: {e}")
+
 
    
 def main() -> None:
