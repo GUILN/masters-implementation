@@ -15,6 +15,7 @@ help:
 	@echo "  test-cli-help        - Show CLI help"
 	@echo "  test-config          - Test configuration loading"
 	@echo "  test-sentry          - Test Sentry integration by triggering an exception"
+	@echo "  run-cli-frame        - Run CLI with frame extraction"
 	@echo "  setup-secrets        - Create secrets.ini from template"
 	@echo "  clean                - Clean temporary files"
 	@echo "  install              - Install dependencies"
@@ -49,6 +50,14 @@ test-config:
 test-sentry:
 	@echo "Testing Sentry integration..."
 	$(PYTHON) $(CLI_SCRIPT) --test-sentry
+
+
+# cli run targets
+
+.PHONY: run-cli-frame
+run-cli-frame:
+	@echo "Running CLI with frame extraction..."
+	$(PYTHON) $(CLI_SCRIPT) frame --verbose
 
 # Setup
 .PHONY: setup-secrets

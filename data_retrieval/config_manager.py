@@ -55,12 +55,15 @@ class ExtractionConfig:
         return self.secrets.has_section(section) and self.secrets.has_option(section, key)
     
     @property
-    def frame_extraction_settings(self) -> Dict[str, Union[int, str]]:
+    def frame_extraction_settings(self) -> Dict[str, Union[int, str, Path]]:
         """Get frame extraction settings."""
         return {
             'frame_rate_per_second': self.getint('frame_extraction', 'frame_rate_per_second'),
             'resolution': self.get('frame_extraction', 'resolution'),
             'batch_size': self.getint('frame_extraction', 'batch_size'),
+            'input_dir': Path(self.get('frame_extraction', 'input_dir')),
+            'output_dir': Path(self.get('frame_extraction', 'output_dir')),
+            'temp_dir': Path(self.get('frame_extraction', 'temp_dir')),
             'input_format': self.get('DEFAULT', 'input_format'),
             'output_format': self.get('DEFAULT', 'output_format')
         }
@@ -116,10 +119,13 @@ if __name__ == "__main__":
     
     # Access configuration values
     print("Frame Extraction Settings:")
-    frame_extraction: Dict[str, Union[int, str]] = config.frame_extraction_settings
+    frame_extraction: Dict[str, Union[int, str, Path]] = config.frame_extraction_settings
     print(f"  Frame rate per second: {frame_extraction['frame_rate_per_second']}")
     print(f"  Resolution: {frame_extraction['resolution']}")
     print(f"  Batch size: {frame_extraction['batch_size']}")
+    print(f"  Input directory: {frame_extraction['input_dir']}")
+    print(f"  Output directory: {frame_extraction['output_dir']}")
+    print(f"  Temp directory: {frame_extraction['temp_dir']}")
     
     print("\nSkeleton Extraction Settings:")
     skeleton_extraction: Dict[str, Union[Path, float, int]] = config.skeleton_extraction_settings
