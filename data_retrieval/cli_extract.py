@@ -4,11 +4,18 @@ Command-line interface for video extraction with configuration override.
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
-from typing import Any, List
+import time
+from common_setup import CommonSetup
 from config_manager import ExtractionConfig
 from app_logging.application_logger import ApplicationLogger
+
+from dataset_path_manager.dataset_path_manager_factory import DatasetPathManagerFactory, DatasetType
+from parallelization.parallelization_service import ParallelizationService
+from retrieval.frame_retriever import FrameRetriever
+import multiprocessing as mp
 
 def create_parser() -> argparse.ArgumentParser:
     """Create command line argument parser."""
@@ -98,25 +105,7 @@ def override_config(config: ExtractionConfig, args: argparse.Namespace) -> None:
 
 def setup_logging(config: ExtractionConfig) -> ApplicationLogger:
     """Setup logging based on configuration."""
-    log_settings = config.logging_settings
-    sentry_settings = config.sentry_settings
-    
-    # Create logger using app_logging with Sentry DSN from secrets
-    logger = ApplicationLogger(
-        name="data_extraction",
-        loglevel=log_settings['level'],
-        logfile=log_settings['log_file'],
-        log_to_stdout=True,
-        sentry_dsn=sentry_settings['dsn']
-    )
-    logger.info(f"Sentry DSN set to: {sentry_settings['dsn']}")
-
-    if sentry_settings['dsn']:
-        logger.info(f"Sentry initialized with environment: {sentry_settings['environment']}")
-    else:
-        logger.warning("Sentry DSN not configured - errors will not be sent to Sentry")
-    
-    return logger
+    return CommonSetup.get_logger()
 
 def test_sentry(config: ExtractionConfig) -> None:
     """Test Sentry integration by triggering an exception."""
@@ -171,64 +160,50 @@ def extract_objects_data(video_path: Path, config: ExtractionConfig, logger) -> 
     
     return output_file
 
-def extract_frames_data(video_path: Path, config: ExtractionConfig, logger) -> str:
+def extract_frames_data(config: ExtractionConfig, logger) -> str:
     """Extract frames from a video file."""
     frame_settings = config.frame_extraction_settings
+    dataset_type = DatasetType.NW_UCLA
     
-    logger.info(f"Processing video for frame extraction: {video_path}")
+    logger.info("starting frame extraction")
     logger.info(f"Frame rate per second: {frame_settings['frame_rate_per_second']}")
-    logger.info(f"Resolution: {frame_settings['resolution']}")
-    
-    # Placeholder for actual frame extraction logic
-    # This would extract frames at specified intervals
-    output_dir = video_path.stem + "_frames"
-    logger.info(f"Would create frames output directory: {output_dir}")
-    
-    return output_dir
+    logger.info(f"Getting video paths from {config.frame_extraction_settings['input_dir']}...")
+    logger.info(f"Dataset type: {dataset_type}")
 
-def process_videos(config: ExtractionConfig, extraction_type: str, logger) -> None:
-    """Process all videos in the input directory."""
-    paths = config.paths
-    frame_settings = config.frame_extraction_settings
+    dataset_path_manager = DatasetPathManagerFactory.create_path_manager(
+        dataset_type=dataset_type,
+        base_path=str(config.frame_extraction_settings['input_dir']),
+        base_output_path=str(config.frame_extraction_settings['output_dir']),
+    )
     
-    # Ensure output directory exists
-    paths['output_dir'].mkdir(parents=True, exist_ok=True)
+    logger.info(f"Dataset path manager created: {type(dataset_path_manager).__name__}") 
     
-    # Find all video files
-    input_dir = paths['input_dir']
-    video_extensions = ['.avi', '.mp4', '.mov']
-    
-    if not input_dir.exists():
-        logger.error(f"Input directory does not exist: {input_dir}")
-        return
-    
-    video_files: List[Path] = []
-    for ext in video_extensions:
-        video_files.extend(input_dir.rglob(f"*{ext}"))
-    
-    logger.info(f"Found {len(video_files)} video files for {extraction_type} extraction")
-    
-    # Choose extraction function based on type
-    if extraction_type == 'skeleton':
-        extract_func = extract_skeleton_data
-    elif extraction_type == 'objects':
-        extract_func = extract_objects_data
-    else:  # frame
-        extract_func = extract_frames_data
-    
-    # Process videos in batches
-    batch_size = frame_settings['batch_size']
-    for i in range(0, len(video_files), batch_size):
-        batch = video_files[i:i + batch_size]
-        logger.info(f"Processing batch {i//batch_size + 1}: {len(batch)} videos")
-        
-        for video_path in batch:
-            try:
-                output_file = extract_func(video_path, config, logger)
-                logger.info(f"Successfully processed: {video_path.name}")
-            except Exception as e:
-                logger.error(f"Error processing {video_path.name}: {e}")
+    logger.info("getting videos path...")    
+    videos_paths = dataset_path_manager.get_videos_path()
+    logger.info(f"Found {len(videos_paths)} videos to process.")
+    for video_path in videos_paths:
+        logger.debug(f"Found video path: {video_path}")
 
+    logger.info("Starting frame extraction")
+    frame_retriever = FrameRetriever(
+        frame_rate=frame_settings['frame_rate_per_second'],
+    )
+    logger.info("Running in the first video for testing")
+    try:
+        # get time
+        start_time = time.time()
+        logger.info(f"Running {len(videos_paths)} tasks in parallel using {os.cpu_count()} workers.")
+        with mp.Pool(processes=os.cpu_count()) as pool:
+            results = pool.starmap(frame_retriever.extract_frames, [(video_path.video_path, video_path.output_path + "_frames") for video_path in videos_paths])
+        logger.info(f"Parallel execution completed. Processed {len(results)} results.")
+        # start timer
+        elapsed_time = time.time() - start_time
+        logger.info(f"Frame extraction completed in {elapsed_time:.2f} seconds.")
+    except Exception as e:
+        logger.error(f"Error extracting frames: {e}")
+
+
+   
 def main() -> None:
     """Main CLI function."""
     parser: argparse.ArgumentParser = create_parser()
@@ -258,8 +233,8 @@ def main() -> None:
         # Display current configuration
         logger.info("Current Configuration:")
         logger.info(f"  Extraction type: {args.extraction_type}")
-        logger.info(f"  Input directory: {config.paths['input_dir']}")
-        logger.info(f"  Output directory: {config.paths['output_dir']}")
+        logger.info(f"  Input directory: {config.frame_extraction_settings['input_dir']}")
+        logger.info(f"  Output directory: {config.frame_extraction_settings['output_dir']}")
         logger.info(f"  Batch size: {config.frame_extraction_settings['batch_size']}")
         
         if args.extraction_type == 'skeleton':
@@ -271,19 +246,11 @@ def main() -> None:
             logger.info(f"  Confidence threshold: {object_settings['confidence_threshold']}")
             logger.info(f"  Max objects: {object_settings['max_objects']}")
         else:  # frame
-            frame_settings = config.frame_extraction_settings
-            logger.info(f"  Frame rate per second: {frame_settings['frame_rate_per_second']}")
-            logger.info(f"  Resolution: {frame_settings['resolution']}")
-        
+            extract_frames_data(config, logger)
+
         if args.dry_run:
             logger.info("Dry run mode - no actual processing will occur")
             return
-        
-        # Run the extraction process
-        logger.info("Starting video extraction process")
-        logger.info(f"Configuration loaded from: {config.config_file}")
-        
-        process_videos(config, args.extraction_type, logger)
         
         logger.info("Video extraction process completed")
         
