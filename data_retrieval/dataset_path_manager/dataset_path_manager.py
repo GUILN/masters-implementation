@@ -8,6 +8,11 @@ class VideoPath:
     video_path: str
     output_path: str
     extension: str
+    
+@dataclass
+class VideoFramesPath:
+    video_id: str
+    frames_path: List[str]
 
 class DatasetPathManagerInterface(ABC):
     """
@@ -17,4 +22,8 @@ class DatasetPathManagerInterface(ABC):
     """
     @abstractmethod
     def get_videos_path(self) -> List[VideoPath]:
+        pass
+    
+    @abstractmethod
+    def get_frames_path(self) -> List[VideoFramesPath]:
         pass

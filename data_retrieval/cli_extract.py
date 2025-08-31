@@ -13,7 +13,6 @@ from config_manager import ExtractionConfig
 from app_logging.application_logger import ApplicationLogger
 
 from dataset_path_manager.dataset_path_manager_factory import DatasetPathManagerFactory, DatasetType
-from parallelization.parallelization_service import ParallelizationService
 from retrieval.frame_retriever import FrameRetriever
 import multiprocessing as mp
 
@@ -145,20 +144,38 @@ def extract_skeleton_data(video_path: Path, config: ExtractionConfig, logger) ->
     
     return output_file
 
-def extract_objects_data(video_path: Path, config: ExtractionConfig, logger) -> str:
+def extract_objects_data(config: ExtractionConfig, logger) -> str:
     """Extract object detection data from a video file."""
     object_settings = config.object_extraction_settings
+    dataset_type = DatasetType.NW_UCLA
     
-    logger.info(f"Processing video for object detection: {video_path}")
     logger.info(f"Using model: {object_settings['model_path']}")
     logger.info(f"Confidence threshold: {object_settings['confidence_threshold']}")
+    logger.info(f"Input directory: {object_settings['input_dir']}")
+    logger.info(f"Output directory: {object_settings['output_dir']}")
+    logger.info(f"Dataset type: {dataset_type}")
+
+    dataset_path_manager = DatasetPathManagerFactory.create_path_manager(
+        dataset_type=dataset_type,
+        base_path=str(config.object_extraction_settings['input_dir']),
+        base_output_path=str(config.object_extraction_settings['output_dir']),
+    )
     
-    # Placeholder for actual object detection logic
-    # This would integrate with your object detection model
-    output_file = video_path.stem + ".obj"
-    logger.info(f"Would create objects output file: {output_file}")
     
-    return output_file
+    logger.info(f"Dataset path manager created: {type(dataset_path_manager).__name__}")
+
+    logger.info("Getting video IDs...")
+    logger.info("Starting object detection...")
+    logger.info("Getting video frames paths...")
+    video_frames_paths = dataset_path_manager.get_frames_path()
+    logger.info(f"Got {len(video_frames_paths)} videos")
+    # get first three frames paths for the first video to see if it is coming in order
+    logger.info(f"{video_frames_paths[0].video_id} - {video_frames_paths[0].frames_path[:3]}")
+    for video_frames_path in video_frames_paths:
+        logger.debug(f" - {video_frames_path.video_id}")
+        for frame_path in video_frames_path.frames_path:
+            logger.debug(f"   - {frame_path}")
+
 
 def extract_frames_data(config: ExtractionConfig, logger) -> str:
     """Extract frames from a video file."""
@@ -245,6 +262,7 @@ def main() -> None:
             object_settings = config.object_extraction_settings
             logger.info(f"  Confidence threshold: {object_settings['confidence_threshold']}")
             logger.info(f"  Max objects: {object_settings['max_objects']}")
+            extract_objects_data(config, logger)
         else:  # frame
             extract_frames_data(config, logger)
 

@@ -2,7 +2,7 @@ import os
 from typing import List
 from common_setup import CommonSetup
 from dataset_path_manager.dataset_path_manager import (
-    DatasetPathManagerInterface, VideoPath
+    DatasetPathManagerInterface, VideoFramesPath, VideoPath
 )
 
 logger = CommonSetup.get_logger()
@@ -46,3 +46,37 @@ class NwUclaPathManager(DatasetPathManagerInterface):
                     extension='.avi'
                 ))
         return video_paths
+
+    def get_frames_path(self) -> List[VideoFramesPath]:
+        """
+        Extracts a unique video ID from the video path.
+        For NW-UCLA, this could be the relative path from base_path without extension.
+        """
+        videos_frames_paths: List[VideoFramesPath] = []
+        for action in os.scandir(self._base_path):
+            if action.is_dir():
+                logger.info(f"getting videos for action {action.name}")
+                for video in os.scandir(action.path):
+                    if video.is_dir():
+                        frames_paths: List[str] = []
+                        logger.debug(f"Getting frames for video {video.name}")
+                        files = os.scandir(video.path)
+                        # filter and sort
+                        # get last 6 digits before extension and make it int
+                        logger.debug(f"Sorting frames for video {video.name}")
+                        sort_key = lambda x: int(os.path.splitext(os.path.basename(x))[0][-6:])
+                        files = sorted(
+                            (f.path for f in files if f.is_file() and f.name.endswith(('.jpg', '.png'))),
+                            key=sort_key
+                        )
+                        logger.debug("sorted files")
+                        for file in files:
+                            frames_paths.append(file)
+                        logger.debug(f"Found {len(frames_paths)} frames for video {video.name}")
+
+                        video_frame_path = VideoFramesPath(
+                            video_id=video.name,
+                            frames_path=frames_paths,
+                        )
+                        videos_frames_paths.append(video_frame_path)
+        return videos_frames_paths

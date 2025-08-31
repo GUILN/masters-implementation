@@ -83,7 +83,9 @@ class ExtractionConfig:
         return {
             'model_path': Path(self.get('object_extraction', 'model_path')),
             'confidence_threshold': self.getfloat('object_extraction', 'confidence_threshold'),
-            'max_objects': self.getint('object_extraction', 'max_objects')
+            'max_objects': self.getint('object_extraction', 'max_objects'),
+            'input_dir': Path(self.get('object_extraction', 'input_dir')),
+            'output_dir': Path(self.get('object_extraction', 'output_dir'))
         }
     
     @property
