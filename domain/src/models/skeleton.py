@@ -29,17 +29,17 @@ class Skeleton:
         person_id: int,
     ):
         self.person_id = person_id
-        self.joints: List[SkeletonJoint] = []
+        self._joints: List[SkeletonJoint] = []
         
     def to_dict(self):
         return {
             "person_id": self.person_id,
-            "joints": [joint.to_dict() for joint in self.joints]
+            "joints": [joint.to_dict() for joint in self._joints]
         }
 
     @property
     def joints(self) -> List[SkeletonJoint]:
-        return self.joints
+        return self._joints
 
     def add_joint(self, joint: SkeletonJoint):
-        self.joints.append(joint)
+        self._joints.append(joint)

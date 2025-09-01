@@ -31,5 +31,12 @@ class VideoFrame:
     def frame_objects(self) -> List[FrameObject]:
         return self._frame_objects
 
+    @property
+    def frame_skeletons(self) -> List[Skeleton]:
+        return self._frame_skeletons
+
     def add_frame_object(self, frame_object: FrameObject):
         self._frame_objects.append(frame_object)
+
+    def add_frame_skeleton(self, frame_skeleton: Skeleton):
+        self._frame_skeletons.append(frame_skeleton)
