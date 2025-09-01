@@ -1,0 +1,36 @@
+{
+  "video_id": "example_video",
+  "category": "demo",
+  "frames": [
+    {
+      "frame_id": "f1",
+      "frame_sequence": 1,
+      "time_stamp": 0.0,
+      "frame_objects": [
+        {
+          "object_class": "person",
+          "bbox": [
+            0.1,
+            0.2,
+            0.3,
+            0.4
+          ],
+          "confidence": 0.99
+        }
+      ],
+      "frame_skeletons": [
+        {
+          "person_id": 1,
+          "joints": [
+            {
+              "joint_id": 1,
+              "name": "head",
+              "x": 0.1,
+              "y": 0.2
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
