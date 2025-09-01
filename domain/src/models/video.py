@@ -18,6 +18,14 @@ class Video:
     def add_frame(self, frame: VideoFrame):
         self._frames.append(frame)
 
+    def to_dict(self):
+        return {
+            "video_id": self.video_id,
+            "category": self.category,
+            "frames": [frame.to_dict() for frame in self.frames]
+        }
+
     @property
     def frames(self) -> List[VideoFrame]:
+        self._frames = sorted(self._frames, key=lambda f: f.frame_sequence)
         return self._frames

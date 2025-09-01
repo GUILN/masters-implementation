@@ -12,3 +12,10 @@ class FrameObject:
         self.object_class = object_class
         self.bbox = bbox
         self.confidence = confidence
+
+    def to_dict(self):
+        return {
+            "object_class": self.object_class,
+            "bbox": self.bbox,
+            "confidence": self.confidence
+        }
