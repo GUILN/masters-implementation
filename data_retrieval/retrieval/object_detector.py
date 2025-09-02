@@ -1,3 +1,4 @@
+from collections import defaultdict
 from common_setup import CommonSetup
 from mmdet.apis import init_detector, inference_detector
 import mmcv
@@ -14,64 +15,67 @@ logger = CommonSetup.get_logger()
 HUMAN_CLASS = 0
 
 
-def filter_nearest_objects(det_result, person_label=0, top_k=15):
+def filter_nearest_objects(det_result, max_per_class=2, person_label=0, top_k=15):
     """
-    Filter the top-k nearest objects to the detected human.
-    Returns a DetDataSample (so it works with visualizer).
+    Keep up to top_k nearest objects total, but max_per_class per class.
+    Always keeps at least one person.
     """
-    # Extract bboxes, scores, and labels
     bboxes = det_result.pred_instances.bboxes.cpu().numpy()
     scores = det_result.pred_instances.scores.cpu().numpy()
     labels = det_result.pred_instances.labels.cpu().numpy()
 
-    # Identify persons
+    # Find person
     person_indices = np.where(labels == person_label)[0]
     if len(person_indices) == 0:
-        print("⚠️ No person detected in this frame.")
-        return det_result  # return unfiltered if no person found
+        print("⚠️ No person detected.")
+        return det_result
 
-    # For now, take the first person (extend later for multi-person if needed)
-    person_idx = person_indices[0]
+    person_idx = person_indices[0]  # take first person
     person_bbox = bboxes[person_idx]
     person_center = [(person_bbox[0] + person_bbox[2]) / 2,
                      (person_bbox[1] + person_bbox[3]) / 2]
 
-    # Collect other objects
+    # Objects (excluding person)
     object_indices = [i for i in range(len(labels)) if i != person_idx]
-
     if not object_indices:
         print("⚠️ No objects detected besides the person.")
         return det_result
 
-    object_centers = [( (bboxes[i][0] + bboxes[i][2]) / 2,
-                        (bboxes[i][1] + bboxes[i][3]) / 2) for i in object_indices]
-
-    # Compute distances from person to objects
+    # Compute distances
+    object_centers = [((bboxes[i][0] + bboxes[i][2]) / 2,
+                       (bboxes[i][1] + bboxes[i][3]) / 2) for i in object_indices]
     distances = [np.linalg.norm(np.array(person_center) - np.array(obj_center))
                  for obj_center in object_centers]
 
-    # Sort objects by distance
+    # Sort by distance
     sorted_indices = np.argsort(distances)
+    sorted_object_indices = [object_indices[i] for i in sorted_indices]
 
-    # Keep top-k nearest objects
-    keep_objects = [object_indices[i] for i in sorted_indices[:top_k]]
+    # Collect final objects
+    class_counts = defaultdict(int)
+    final_keep = []
+    for idx in sorted_object_indices:
+        cls = labels[idx]
+        if class_counts[cls] < max_per_class:
+            final_keep.append(idx)
+            class_counts[cls] += 1
+        if len(final_keep) >= top_k:  # stop once we hit total cap
+            break
 
-    # Always keep the person
-    keep_indices = [person_idx] + keep_objects
+    keep_indices = [person_idx] + final_keep
 
-    # Build new InstanceData
+    # Rebuild result
     filtered_instances = InstanceData(
         bboxes=det_result.pred_instances.bboxes[keep_indices],
         scores=det_result.pred_instances.scores[keep_indices],
         labels=det_result.pred_instances.labels[keep_indices]
     )
-
-    # Wrap into a new DetDataSample
     filtered_result = DetDataSample()
     filtered_result.pred_instances = filtered_instances
     filtered_result.set_metainfo(det_result.metainfo)
 
     return filtered_result
+
 
 def filter_limiting_number_of_objects(
     results: DetDataSample,
