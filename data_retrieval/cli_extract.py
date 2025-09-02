@@ -16,6 +16,8 @@ from dataset_path_manager.dataset_path_manager_factory import DatasetPathManager
 from retrieval.frame_retriever import FrameRetriever
 import multiprocessing as mp
 
+from retrieval.object_detector import ObjectDetector
+
 def create_parser() -> argparse.ArgumentParser:
     """Create command line argument parser."""
     parser = argparse.ArgumentParser(
@@ -175,6 +177,20 @@ def extract_objects_data(config: ExtractionConfig, logger) -> str:
         logger.debug(f" - {video_frames_path.video_id}")
         for frame_path in video_frames_path.frames_path:
             logger.debug(f"   - {frame_path}")
+            
+    logger.info(f"Testing the creation of VideoFrame...")
+    test_video_frame = video_frames_paths[102]
+    logger.info("Initializing object detector object...")
+    object_detector = ObjectDetector(
+        config_file='retrieval/config/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py',
+        checkpoint_file='retrieval/config/checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
+    )
+    logger.info("Running detect method")
+    object_detector.detect(
+        image_path=test_video_frame.frames_path[0],
+        output_file=f"output_{test_video_frame.video_id}.jpg"
+    )
+    logger.info("Object detected")
 
 
 def extract_frames_data(config: ExtractionConfig, logger) -> str:
