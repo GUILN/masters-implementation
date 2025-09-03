@@ -146,8 +146,11 @@ def extract_skeleton_data(video_path: Path, config: ExtractionConfig, logger) ->
     
     return output_file
 
+
 def extract_objects_data(config: ExtractionConfig, logger) -> str:
-    """Extract object detection data from a video file."""
+    """
+    Extract object detection data from a video file.
+    """
     object_settings = config.object_extraction_settings
     dataset_type = DatasetType.NW_UCLA
     

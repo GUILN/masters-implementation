@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import List
 from common_setup import CommonSetup
 from mmdet.apis import init_detector, inference_detector
 import mmcv
@@ -8,6 +9,7 @@ import torch
 from mmdet.structures import DetDataSample
 from mmengine.structures import InstanceData
 import numpy as np
+from src.models.frame_object import FrameObject
 
 
 logger = CommonSetup.get_logger()
@@ -133,7 +135,37 @@ class ObjectDetector:
     ):
         logger.info("Initializing object detector...")
         self._model = init_detector(config_file, checkpoint_file, device='cpu')
-        
+       
+       
+    def detect_frame_objects(
+        self,
+        image_path: str,
+        score_threshold: float = 0.5,
+        limit_objects: int = 10
+    ) -> List[FrameObject]:
+        logger.info(f"Running object detection on {image_path}")
+        results = inference_detector(self._model, image_path)
+        logger.debug(f"Detection results: {results}")
+        filtered_results = filter_detections(results, limit_objects)
+        frame_objects = []
+        zipped = zip(
+            filtered_results.pred_instances.labels,
+            filtered_results.pred_instances.bboxes,
+            filtered_results.pred_instances.scores
+        )
+        for label, bbox, score in zipped:
+            frame_objects.append(
+                FrameObject(
+                    object_class=label,
+                    bbox=bbox,
+                    confidence=score
+                )
+            )
+
+
+        logger.debug(f"Filtered results: {filtered_results}")
+        return filtered_results
+
     def detect(
         self,
         image_path: str,
@@ -141,11 +173,20 @@ class ObjectDetector:
         score_threshold: float = 0.5,
         limit_objects: int = 10,
     ):
+        """
+        Detect objects in a frame. Generates an file with the bounding boxes.
+        This method is used for debugging purposes.
+        """
         logger.info(f"Running object detection on {image_path}, saving to {output_file}")
         results = inference_detector(self._model, image_path)
         logger.info(f"Filtering {limit_objects} objects...")
         filtered_results = filter_detections(results, limit_objects)
-        logger.info(f"Reading image from {image_path}")
+        frame_object = FrameObject(
+            object_class=str(int(filtered_results.pred_instances.labels[0])),
+            bbox=[float(coord) for coord in filtered_results.pred_instances.bboxes[0]],
+            confidence=float(filtered_results.pred_instances.scores[0]),
+        )
+        logger.info(f"Frame object created: {frame_object.to_dict()}")
         img = mmcv.imread(image_path)
         visualizer = VISUALIZERS.build(self._model.cfg.visualizer)
         visualizer.add_datasample(
