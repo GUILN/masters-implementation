@@ -145,7 +145,8 @@ class ObjectDetector:
     ) -> List[FrameObject]:
         logger.info(f"Running object detection on {image_path}")
         results = inference_detector(self._model, image_path)
-        logger.debug(f"Detection results: {results}")
+        logger.debug("found results")
+        logger.debug("filtering results...")
         filtered_results = filter_detections(results, limit_objects)
         frame_objects = []
         zipped = zip(
@@ -153,18 +154,19 @@ class ObjectDetector:
             filtered_results.pred_instances.bboxes,
             filtered_results.pred_instances.scores
         )
+        logger.debug("Creating FrameObject instances...")
         for label, bbox, score in zipped:
             frame_objects.append(
                 FrameObject(
-                    object_class=label,
-                    bbox=bbox,
-                    confidence=score
+                    object_class=str(int(label)),
+                    bbox=[round(float(coord), 2) for coord in bbox],
+                    confidence=round(float(score), 2),
                 )
             )
 
 
-        logger.debug(f"Filtered results: {filtered_results}")
-        return filtered_results
+        logger.debug("Created FrameObject instances.")
+        return frame_objects
 
     def detect(
         self,
@@ -183,8 +185,8 @@ class ObjectDetector:
         filtered_results = filter_detections(results, limit_objects)
         frame_object = FrameObject(
             object_class=str(int(filtered_results.pred_instances.labels[0])),
-            bbox=[float(coord) for coord in filtered_results.pred_instances.bboxes[0]],
-            confidence=float(filtered_results.pred_instances.scores[0]),
+            bbox=[round(float(coord), 2) for coord in filtered_results.pred_instances.bboxes[0]],
+            confidence=round(float(filtered_results.pred_instances.scores[0]), 2),
         )
         logger.info(f"Frame object created: {frame_object.to_dict()}")
         img = mmcv.imread(image_path)

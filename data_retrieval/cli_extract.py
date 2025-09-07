@@ -4,6 +4,7 @@ Command-line interface for video extraction with configuration override.
 """
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -17,6 +18,11 @@ from retrieval.frame_retriever import FrameRetriever
 import multiprocessing as mp
 
 from retrieval.object_detector import ObjectDetector
+from tqdm import tqdm
+
+from src.models.frame_object import FrameObject
+from src.models.video_frame import VideoFrame
+from src.models.video import Video
 
 def create_parser() -> argparse.ArgumentParser:
     """Create command line argument parser."""
@@ -176,25 +182,53 @@ def extract_objects_data(config: ExtractionConfig, logger) -> str:
     logger.info(f"Got {len(video_frames_paths)} videos")
     # get first three frames paths for the first video to see if it is coming in order
     logger.info(f"{video_frames_paths[0].video_id} - {video_frames_paths[0].frames_path[:3]}")
-    for video_frames_path in video_frames_paths:
-        logger.debug(f" - {video_frames_path.video_id}")
-        for frame_path in video_frames_path.frames_path:
-            logger.debug(f"   - {frame_path}")
-            
-    logger.info(f"Testing the creation of VideoFrame...")
-    test_video_frame = video_frames_paths[102]
-    logger.info("Initializing object detector object...")
     object_detector = ObjectDetector(
         config_file='retrieval/config/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py',
         checkpoint_file='retrieval/config/checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
     )
-    logger.info("Running detect method")
-    object_detector.detect(
-        image_path=test_video_frame.frames_path[0],
-        output_file=f"output_{test_video_frame.video_id}.jpg"
-    )
-    logger.info("Object detected")
-
+    videos_processed = 0
+    logger.info(f"{len(video_frames_paths)} videos to process...")
+    for video_frames_path in video_frames_paths:
+        # format data/output/nw_ucla/multiview_action_videos/a06/v01_s02_e01_frames/v01_s02_e01_frame_000000.jpg
+        # get the last folder name before the file as the video category
+        videos_processed += 1
+        video_category = video_frames_path.frames_path[0].split(os.sep)[-3]
+        logger.info(f"Video category: {video_category}")
+        video = Video(
+            video_id=video_frames_path.video_id,
+            category=video_category,
+        )
+        logger.debug(f" - {video_frames_path.video_id}")
+        for frame_index, frame_path in enumerate(video_frames_path.frames_path):
+            logger.debug(f" extracting - {frame_path}")
+            detected_objects = object_detector.detect_frame_objects(
+               image_path=frame_path,
+            )
+            logger.debug(f" Detected objects: {[obj.to_dict() for obj in detected_objects]}")
+            frame_id = frame_path.split(os.sep)[-1]
+            # take off the extension from frame_id
+            frame_id = os.path.splitext(frame_id)[0]
+            video_frame = VideoFrame(
+                frame_id=frame_id,
+                frame_sequence=frame_index,
+                time_stamp=frame_index / 30.0,  # assuming 30 fps for timestamp
+            )
+            logger.debug("Adding detected objects to video frame...")
+            for obj in detected_objects:
+                video_frame.add_frame_object(obj)
+            video.add_frame(video_frame)
+         
+        output_file = os.path.join(
+            config.object_extraction_settings['output_dir'],
+            video_category,
+            f"{video.video_id}_objects.json"
+        )
+        logger.info(f"Saving detected objects to {output_file}...")
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(video.to_dict(), f)
+        logger.info(f"Just processed video {video.video_id}")
+        logger.info(f"Processed {videos_processed} videos so far.")
 
 def extract_frames_data(config: ExtractionConfig, logger) -> str:
     """Extract frames from a video file."""
