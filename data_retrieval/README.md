@@ -52,3 +52,17 @@ mim install "mmdet==3.2.0"
 # Test instalation
 python -c "import torch, mmcv, mmdet; print(torch.__version__, mmcv.__version__, mmdet.__version__)"
 ```
+
+#### Getting Faster-RCNN
+```bash
+mkdir -p configs/faster_rcnn
+wget https://raw.githubusercontent.com/open-mmlab/mmdetection/main/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py -P configs/faster_rcnn/
+
+# Also grab the _base_ configs it depends on
+mkdir -p configs/_base_/models configs/_base_/datasets configs/_base_/schedules configs/_base_
+wget https://raw.githubusercontent.com/open-mmlab/mmdetection/main/configs/_base_/models/faster-rcnn_r50_fpn.py -P configs/_base_/models/
+wget https://raw.githubusercontent.com/open-mmlab/mmdetection/main/configs/_base_/datasets/coco_detection.py -P configs/_base_/datasets/
+wget https://raw.githubusercontent.com/open-mmlab/mmdetection/main/configs/_base_/schedules/schedule_1x.py -P configs/_base_/schedules/
+wget https://raw.githubusercontent.com/open-mmlab/mmdetection/main/configs/_base_/default_runtime.py -P configs/_base_/
+
+```
