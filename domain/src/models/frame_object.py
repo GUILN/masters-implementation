@@ -19,3 +19,11 @@ class FrameObject:
             "bbox": self.bbox,
             "confidence": self.confidence
         }
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(
+            object_class=data["object_class"],
+            bbox=data["bbox"],
+            confidence=data["confidence"]
+        )

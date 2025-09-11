@@ -66,3 +66,20 @@ wget https://raw.githubusercontent.com/open-mmlab/mmdetection/main/configs/_base
 wget https://raw.githubusercontent.com/open-mmlab/mmdetection/main/configs/_base_/default_runtime.py -P configs/_base_/
 
 ```
+
+## Extracting Skeleton Pose - Running HRNet MMPose
+
+### Create another (new) conda environment
+
+```bash
+conda create -n mmpose python=3.8 -y
+conda activate mmpose
+
+pip install torch torchvision torchaudio  # matching your CUDA version
+pip install mmdet
+pip install mmpose
+
+pip install git+https://github.com/GUILN/masters-implementation.git#subdirectory=domain
+
+pip install git+https://github.com/GUILN/masters-implementation.git#subdirectory=utils
+```
