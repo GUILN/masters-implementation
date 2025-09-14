@@ -137,20 +137,31 @@ def test_sentry(config: ExtractionConfig) -> None:
     except Exception as e:
         logger.exception(f"❌ Unexpected error during Sentry test: {e}")
 
-def extract_skeleton_data(video_path: Path, config: ExtractionConfig, logger) -> str:
+def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
     """Extract skeleton data from a video file."""
-    skeleton_settings = config.skeleton_extraction_settings
-    
-    logger.info(f"Processing video for skeleton extraction: {video_path}")
-    logger.info(f"Using model: {skeleton_settings['model_path']}")
-    logger.info(f"Confidence threshold: {skeleton_settings['confidence_threshold']}")
-    
-    # Placeholder for actual skeleton extraction logic
-    # This would integrate with your pose estimation model
-    output_file = video_path.stem + ".ske"
-    logger.info(f"Would create skeleton output file: {output_file}")
-    
-    return output_file
+    object_settings = config.object_extraction_settings
+    dataset_type = DatasetType.NW_UCLA
+    logger.info("Extracting skeleton data...")
+
+    logger.info(f"Using model: {object_settings['model_path']}")
+    logger.info(f"Confidence threshold: {object_settings['confidence_threshold']}")
+    logger.info(f"Input directory: {object_settings['input_dir']}")
+    logger.info(f"Output directory: {object_settings['output_dir']}")
+    logger.info(f"Dataset type: {dataset_type}")
+
+    _ = DatasetPathManagerFactory.create_path_manager(
+        dataset_type=dataset_type,
+        base_path=str(config.object_extraction_settings['input_dir']),
+        base_output_path=str(config.object_extraction_settings['output_dir']),
+    )
+    # read json file as dict
+    input_file = "data/output/nw_ucla/extracted_features/a01/v01_s01_e00_frames_objects.json"
+    with open(input_file, 'r', encoding='utf-8') as f:
+        logger.info(f"Reading skeleton data from {input_file}...")
+        data = json.load(f)
+        logger.info(f"Data loaded: {type(data)}")
+        frame_object = FrameObject.from_dict(data)
+        logger.info(frame_object)
 
 
 def extract_objects_data(config: ExtractionConfig, logger) -> str:
@@ -171,8 +182,8 @@ def extract_objects_data(config: ExtractionConfig, logger) -> str:
         base_path=str(config.object_extraction_settings['input_dir']),
         base_output_path=str(config.object_extraction_settings['output_dir']),
     )
-    
-    
+
+
     logger.info(f"Dataset path manager created: {type(dataset_path_manager).__name__}")
 
     logger.info("Getting video IDs...")
@@ -311,6 +322,7 @@ def main() -> None:
             skeleton_settings = config.skeleton_extraction_settings
             logger.info(f"  Confidence threshold: {skeleton_settings['confidence_threshold']}")
             logger.info(f"  Max persons: {skeleton_settings['max_persons']}")
+            extract_skeleton_data(config, logger)
         elif args.extraction_type == 'objects':
             object_settings = config.object_extraction_settings
             logger.info(f"  Confidence threshold: {object_settings['confidence_threshold']}")

@@ -3,6 +3,7 @@
 # Variables
 PYTHON = python
 CLI_SCRIPT = cli_extract.py
+SKELETON_CLI_SCRIPT = cli_extract_skeleton.py
 CONFIG_FILE = config.ini
 
 # Default target
@@ -17,6 +18,7 @@ help:
 	@echo "  test-sentry          - Test Sentry integration by triggering an exception"
 	@echo "  run-cli-frame        - Run CLI with frame extraction"
 	@echo "  run-cli-objects      - Run CLI with object extraction"
+	@echo "  run-cli-skeleton     - Run CLI with skeleton extraction"
 	@echo "  setup-secrets        - Create secrets.ini from template"
 	@echo "  clean                - Clean temporary files"
 	@echo "  install              - Install dependencies"
@@ -64,6 +66,11 @@ run-cli-frame:
 run-cli-objects:
 	@echo "Running CLI with object extraction..."
 	$(PYTHON) $(CLI_SCRIPT) objects --verbose
+
+.PHONY: run-cli-skeleton
+run-cli-skeleton:
+	@echo "Running CLI with skeleton extraction..."
+	$(PYTHON) $(SKELETON_CLI_SCRIPT) --verbose
 
 # Setup
 .PHONY: setup-secrets
