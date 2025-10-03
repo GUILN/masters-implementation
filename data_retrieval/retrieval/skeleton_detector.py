@@ -8,6 +8,8 @@ from src.models.skeleton import Skeleton
 from mmpose.utils import register_all_modules as register_pose_modules
 from mmdet.utils import register_all_modules as register_det_modules
 from mmengine.registry import DefaultScope
+from mmengine.structures import InstanceData
+
 
 
 
@@ -40,13 +42,25 @@ class SkeletonDetector:
         # --- Init models ---
         with DefaultScope.overwrite_default_scope('mmdet'):
             det_model = init_detector(det_config, det_checkpoint, device='cpu')
-            logger.info("Models initialized.") 
+            logger.info("Models initialized.")
             img_path = image_path
 
             # 1. Detect humans
             det_result = inference_detector(det_model, img_path)
-            person_detections = det_result[0]  # class 0 = person in COCO
-            person_bboxes = [bbox for bbox in person_detections if bbox[4] > 0.5]  # filter by score
+
+            # det_result is a DetDataSample
+            instances = det_result.pred_instances  # type: InstanceData
+
+            # COCO: class 0 = person
+            person_mask = (instances.labels.cpu().numpy() == 0)
+            bboxes = instances.bboxes.cpu().numpy()
+            scores = instances.scores.cpu().numpy()
+
+            # filter by person class and score > 0.5
+            person_bboxes = [
+                bbox for bbox, label, score in zip(bboxes, instances.labels, scores)
+                if label == 0 and score > 0.5
+            ]
 
         with DefaultScope.overwrite_default_scope('mmpose'):
             pose_model = init_model(pose_config, pose_checkpoint, device='cpu')

@@ -86,23 +86,15 @@ def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
     logger.info(f"Dataset type: {dataset_type}")
 
     # read json file as dict
-    input_file = "data/output/nw_ucla/extracted_features/a01/v01_s03_e04_frames_objects.json"
+    input_file = "data/output/nw_ucla/multiview_action_videos/a01/v01_s01_e03_frames/v01_s01_e03_frame_000008.jpg"
     with open(input_file, 'r', encoding='utf-8') as f:
         logger.info(f"Reading skeleton data from {input_file}...")
-        data = json.load(f)
-        logger.info(f"Data loaded: {type(data)}")
-        logger.info(f"Data content keys: {list(data.keys()) if isinstance(data, dict) else 'N/A'}")
-        video_object = Video.from_dict(data)
-        logger.info(f"video id: {video_object.video_id}")
-        logger.info(f"video category: {video_object.category}")
-        logger.info(f"video frames: {len(video_object.frames)}")
         
         skeleton_detector = SkeletonDetector()
         logger.info("Detecting skeletons in frames...")
-        skeleton_detector.detect_skeletons(
+        skeleton = skeleton_detector.detect_skeletons(
             image_path=input_file,
         )
-        logger.info(video_object)
 
 def main() -> None:
     parser = create_parser()
