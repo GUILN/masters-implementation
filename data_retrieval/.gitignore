@@ -47,3 +47,6 @@ tmp/
 # Config folder
 config/
 
+# MMPOSE Repository
+retrieval/mmpose
+

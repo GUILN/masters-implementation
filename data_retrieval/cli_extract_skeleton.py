@@ -12,6 +12,7 @@ from config_manager import ExtractionConfig
 from app_logging.application_logger import ApplicationLogger
 
 from dataset_path_manager.dataset_path_manager_factory import DatasetPathManagerFactory, DatasetType
+from retrieval.skeleton_detector import SkeletonDetector
 from src.models.frame_object import FrameObject
 from src.models.video import Video
 
@@ -85,7 +86,7 @@ def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
     logger.info(f"Dataset type: {dataset_type}")
 
     # read json file as dict
-    input_file = "data/output/nw_ucla/extracted_features/a01/v01_s01_e00_frames_objects.json"
+    input_file = "data/output/nw_ucla/extracted_features/a01/v01_s03_e04_frames_objects.json"
     with open(input_file, 'r', encoding='utf-8') as f:
         logger.info(f"Reading skeleton data from {input_file}...")
         data = json.load(f)
@@ -95,11 +96,12 @@ def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
         logger.info(f"video id: {video_object.video_id}")
         logger.info(f"video category: {video_object.category}")
         logger.info(f"video frames: {len(video_object.frames)}")
-        for f in video_object.frames:
-            logger.info(f"frame id: {f.frame_id}, frame_sequence: {f.frame_sequence}")
-            logger.info(f"number of objects in frame: {len(f.frame_objects)}")
-            for obj in f.frame_objects:
-                logger.info(f"  object: {obj.to_dict()}")
+        
+        skeleton_detector = SkeletonDetector()
+        logger.info("Detecting skeletons in frames...")
+        skeleton_detector.detect_skeletons(
+            image_path=input_file,
+        )
         logger.info(video_object)
 
 def main() -> None:
