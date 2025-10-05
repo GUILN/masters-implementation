@@ -12,7 +12,7 @@ from config_manager import ExtractionConfig
 from app_logging.application_logger import ApplicationLogger
 
 from dataset_path_manager.dataset_path_manager_factory import DatasetPathManagerFactory, DatasetType
-from retrieval.skeleton_detector import SkeletonDetector
+from retrieval.skeleton_detector import DetectionPipeline
 from src.models.frame_object import FrameObject
 from src.models.video import Video
 
@@ -87,14 +87,15 @@ def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
 
     # read json file as dict
     input_file = "data/output/nw_ucla/multiview_action_videos/a01/v01_s01_e03_frames/v01_s01_e03_frame_000008.jpg"
-    with open(input_file, 'r', encoding='utf-8') as f:
-        logger.info(f"Reading skeleton data from {input_file}...")
-        
-        skeleton_detector = SkeletonDetector()
-        logger.info("Detecting skeletons in frames...")
-        skeleton = skeleton_detector.detect_skeletons(
-            image_path=input_file,
-        )
+    logger.info(f"Reading skeleton data from {input_file}...")
+    
+    # skeleton_detector = SkeletonDetector()
+    detection_pipeline = DetectionPipeline()
+    logger.info("Detecting skeletons in frames...")
+    skeleton = detection_pipeline.run_detection_pipeline(
+        image_path=input_file,
+        visualize=True
+    )
 
 def main() -> None:
     parser = create_parser()
