@@ -158,7 +158,12 @@ class DetectionPipeline:
         # 4. Visualization step removed due to missing API
         if visualize:
             logger.info("Visualizing detections...")
-            visualize_detections(image_path, person_bboxes, pose_instances)
+            visualize_detections(
+                image_path,
+                person_bboxes,
+                pose_instances,
+                filtered_objects.pred_instances,
+            )
 
         # Implement skeleton detection logic here
         return None
@@ -175,6 +180,26 @@ COCO_SKELETON = [
     (5, 11), (6, 12)     # torso
 ]
 
+# Use a list of maximally distinct colors (RGB)
+DISTINCT_COLORS = [
+    (255, 0, 0),      # Red
+    (0, 255, 0),      # Green
+    (0, 0, 255),      # Blue
+    (255, 255, 0),    # Yellow
+    (255, 0, 255),    # Magenta
+    (0, 255, 255),    # Cyan
+    (128, 0, 0),      # Maroon
+    (0, 128, 0),      # Dark Green
+    (0, 0, 128),      # Navy
+    (128, 128, 0),    # Olive
+    (128, 0, 128),    # Purple
+    (0, 128, 128),    # Teal
+    (192, 192, 192),  # Silver
+    (128, 128, 128),  # Gray
+    (0, 0, 0),        # Black
+    (255, 255, 255),  # White
+]
+
 def to_numpy(x):
     """Convert torch tensor to numpy if needed"""
     logger.info("Converting to numpy...")
@@ -182,7 +207,12 @@ def to_numpy(x):
         return x.cpu().numpy()
     return np.array(x)
 
-def visualize_detections(image_path: str, person_bboxes: list, pose_instances: InstanceData):
+def visualize_detections(
+    image_path: str,
+    person_bboxes: list,
+    pose_instances: InstanceData,
+    object_instances: InstanceData = None,
+):
     """Visualize detected persons and keypoints on the image"""
     image = cv2.imread(image_path)
 
@@ -190,6 +220,17 @@ def visualize_detections(image_path: str, person_bboxes: list, pose_instances: I
     for bbox in person_bboxes:
         x1, y1, x2, y2 = map(int, bbox)
         cv2.rectangle(image, (x1, y1), (x2, y2), color=(0, 255, 0), thickness=2)
+
+    logger.info("Visualizing objects...")
+    def color_for_label(label):
+        # Simple color mapping for demonstration
+        return DISTINCT_COLORS[int(label) % len(DISTINCT_COLORS)]
+    if object_instances is not None:
+        for bbox, label in zip(object_instances.bboxes, object_instances.labels):
+            x1, y1, x2, y2 = map(int, bbox)
+            # draw rectangle with different color for objects
+            cv2.rectangle(image, (x1, y1), (x2, y2), color=color_for_label(label), thickness=2)
+            cv2.putText(image, str(label), (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
     logger.info("Drawing keypoints...")
     if hasattr(pose_instances, "keypoints"):
