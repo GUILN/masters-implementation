@@ -10,9 +10,16 @@ from mmpose.utils import register_all_modules as register_pose_modules
 from mmdet.utils import register_all_modules as register_det_modules
 from mmengine.registry import DefaultScope
 from mmengine.structures import InstanceData
+import numpy as np
+import cv2
 
 
-
+# COCO skeleton connections
+COCO_SKELETON = [
+    [0, 1], [0, 2], [1, 3], [2, 4],
+    [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
+    [5, 11], [6, 12], [11, 12], [11, 13], [13, 15], [12, 14], [14, 16]
+]
 
 # --- Configs ---
 
@@ -140,7 +147,71 @@ class DetectionPipeline:
 
         # 4. Visualization step removed due to missing API
         if visualize:
-            pass
+            logger.info("Visualizing detections...")
+            visualize_detections(image_path, person_bboxes, pose_instances)
 
         # Implement skeleton detection logic here
         return None
+
+
+# COCO skeleton connections (example)
+COCO_SKELETON = [
+    (5, 7), (7, 9),      # left arm
+    (6, 8), (8, 10),     # right arm
+    (11, 13), (13, 15),  # left leg
+    (12, 14), (14, 16),  # right leg
+    (5, 6),              # shoulders
+    (11, 12),            # hips
+    (5, 11), (6, 12)     # torso
+]
+
+def to_numpy(x):
+    """Convert torch tensor to numpy if needed"""
+    logger.info("Converting to numpy...")
+    if hasattr(x, "cpu"):
+        return x.cpu().numpy()
+    return np.array(x)
+
+def visualize_detections(image_path: str, person_bboxes: list, pose_instances: InstanceData):
+    """Visualize detected persons and keypoints on the image"""
+    image = cv2.imread(image_path)
+
+    logger.info("Visualizing detections...")
+    for bbox in person_bboxes:
+        x1, y1, x2, y2 = map(int, bbox)
+        cv2.rectangle(image, (x1, y1), (x2, y2), color=(0, 255, 0), thickness=2)
+
+    logger.info("Drawing keypoints...")
+    if hasattr(pose_instances, "keypoints"):
+        keypoints = to_numpy(pose_instances.keypoints)  # (N, K, 2) or (N, K, 3)
+
+        logger.info("Getting keypoint scores...")
+        if hasattr(pose_instances, "keypoint_scores") and pose_instances.keypoint_scores is not None:
+            logger.info("Using separate keypoint scores...")
+            scores = to_numpy(pose_instances.keypoint_scores)  # (N, K)
+        else:
+            # If scores are included in keypoints (shape (N, K, 3))
+            if keypoints.shape[-1] == 3:
+                scores = keypoints[..., 2]
+                keypoints = keypoints[..., :2]
+            else:
+                scores = np.ones(keypoints.shape[:2])
+
+        logger.info("Drawing keypoints...")
+        for person_kpts, person_scores in zip(keypoints, scores):
+            logger.info("Drawing individual keypoints...")
+            for (x, y), score in zip(person_kpts, person_scores):
+                if score > 0.3:
+                    cv2.circle(image, (int(x), int(y)), radius=3, color=(0, 0, 255), thickness=-1)
+
+            logger.info("Drawing skeleton connections...")
+            for i1, i2 in COCO_SKELETON:
+                if person_scores[i1] > 0.3 and person_scores[i2] > 0.3:
+                    x1, y1 = person_kpts[i1]
+                    x2, y2 = person_kpts[i2]
+                    cv2.line(image, (int(x1), int(y1)), (int(x2), int(y2)), (255, 0, 0), 2)
+
+    # Show the image
+    cv2.imshow("Detections + Keypoints", image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
