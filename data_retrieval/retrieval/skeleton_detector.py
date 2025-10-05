@@ -4,6 +4,7 @@ from mmpose.structures import merge_data_samples
 from mmdet.apis import inference_detector, init_detector
 import mmcv
 import os
+from retrieval.object_filter import filter_nearest_objects
 from src.models.skeleton import Skeleton
 from src.models.video_frame import VideoFrame
 from mmpose.utils import register_all_modules as register_pose_modules
@@ -14,12 +15,6 @@ import numpy as np
 import cv2
 
 
-# COCO skeleton connections
-COCO_SKELETON = [
-    [0, 1], [0, 2], [1, 3], [2, 4],
-    [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
-    [5, 11], [6, 12], [11, 12], [11, 13], [13, 15], [12, 14], [14, 16]
-]
 
 # --- Configs ---
 
@@ -100,10 +95,14 @@ class DetectionPipeline:
         pose_config = '/home/guilherme/Mestrado/masters-implementation/data_retrieval/retrieval/mmpose/mmpose/configs/body_2d_keypoint/topdown_heatmap/coco/td-hm_hrnet-w32_8xb64-210e_coco-256x192.py',
         pose_checkpoint = '/home/guilherme/Mestrado/masters-implementation/data_retrieval/retrieval/config/checkpoints/hrnet_w32_coco_256x192-c78dce93_20200708.pth',
         conf_threshold = 0.3,
+        max_per_class=2,
+        top_k_objects=10,
     ):
         self.object_detector = ObjectDetector(det_config, det_checkpoint)
         self.pose_detector = PoseDetector(pose_config, pose_checkpoint)
-        self.conf_threshold = conf_threshold
+        self._conf_threshold = conf_threshold
+        self._max_per_class = max_per_class
+        self._top_k_objects = top_k_objects
 
     def run_detection_pipeline(
         self,
@@ -117,26 +116,31 @@ class DetectionPipeline:
         logger.info("Starting objects detection...")
 
         logger.info(f"Image path: {image_path}")
-        
+
         # 1. Detect objects
         instances = self.object_detector.detect_objects(image_path)
-        
-        # COCO: class 0 = person
-        person_mask = (instances.labels.cpu().numpy() == 0)
+
         bboxes = instances.bboxes.cpu().numpy()
         scores = instances.scores.cpu().numpy()
 
         # filter by person class and score > 0.5
         person_bboxes = [
             bbox for bbox, label, score in zip(bboxes, instances.labels, scores)
-            if label == 0 and score > self.conf_threshold
+            if label == 0 and score > self._conf_threshold
         ]
-        
+
         logger.info(f"Number of persons detected: {len(person_bboxes)}")
-        
+
         if len(person_bboxes) == 0:
-            logger.warning("No persons detected.")
+            logger.warning("⚠️ No person detected.")
             return skeleton
+        elif len(person_bboxes) > 1:
+            logger.warning("⚠️ Multiple persons detected. Using the first one.")
+            logger.info("Filtering to detect the biggest bounding box...")
+            person_bboxes = sorted(person_bboxes, key=lambda b: (b[2]-b[0])*(b[3]-b[1]), reverse=True)
+            person_bboxes = [person_bboxes[0]]
+           
+
 
         # 2. Extract poses
         pose_instances = self.pose_detector.detect_poses(image_path, person_bboxes)
@@ -145,6 +149,12 @@ class DetectionPipeline:
         for person in pose_instances.keypoints:
             print("Joints (x,y):", person)
 
+        logger.info("Filtering nearest objects...") 
+        filtered_objects = filter_nearest_objects(
+            pred_instances=instances,
+            person_bbox=person_bboxes[0],
+        )
+        logger.info(f"Number of objects after filtering: {len(filtered_objects.pred_instances.bboxes)}")
         # 4. Visualization step removed due to missing API
         if visualize:
             logger.info("Visualizing detections...")
