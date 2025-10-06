@@ -83,3 +83,12 @@ pip install git+https://github.com/GUILN/masters-implementation.git#subdirectory
 
 pip install git+https://github.com/GUILN/masters-implementation.git#subdirectory=utils
 ```
+
+## Clone Open Pose Repo
+
+You need to clone [Open Pose repo](https://github.com/open-mmlab/mmpose) insied the folder `/retrieval`. So that the `skeleton_detector.py` can load all the configuration it needs
+
+You also need to install the requirements inside the conda environment
+
+## Download the corresponding Checkpoints
+- Ask some large language model to give the url of the corresponding checkpoints
