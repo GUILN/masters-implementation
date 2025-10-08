@@ -12,7 +12,7 @@ from config_manager import ExtractionConfig
 from app_logging.application_logger import ApplicationLogger
 
 from dataset_path_manager.dataset_path_manager_factory import DatasetPathManagerFactory, DatasetType
-from retrieval.skeleton_detector import DetectionPipeline
+from retrieval.skeleton_detector import DetectionPipeline, FrameInfo
 from src.models.frame_object import FrameObject
 from src.models.video import Video
 
@@ -92,10 +92,17 @@ def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
     # skeleton_detector = SkeletonDetector()
     detection_pipeline = DetectionPipeline()
     logger.info("Detecting skeletons in frames...")
-    skeleton = detection_pipeline.run_detection_pipeline(
+    video_frame = detection_pipeline.run_detection_pipeline(
         image_path=input_file,
-        visualize=True
+        visualize=False,
+        frame_info=FrameInfo(
+            frame_id=8,
+            frame_sequence=3,
+            timestamp=0.267
+        )
     )
+    logger.info("video frame")
+    logger.info(video_frame.to_dict())
 
 def main() -> None:
     parser = create_parser()
