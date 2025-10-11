@@ -12,7 +12,7 @@ from config_manager import ExtractionConfig
 from app_logging.application_logger import ApplicationLogger
 
 from dataset_path_manager.dataset_path_manager_factory import DatasetPathManagerFactory, DatasetType
-from retrieval.skeleton_detector import DetectionPipeline
+from retrieval.skeleton_detector import DetectionPipeline, FrameInfo
 from src.models.frame_object import FrameObject
 from src.models.video import Video
 
@@ -90,12 +90,28 @@ def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
     logger.info(f"Reading skeleton data from {input_file}...")
     
     # skeleton_detector = SkeletonDetector()
+    logger.info("Creating dataset path manager...")
+    dataset_path_manager = DatasetPathManagerFactory.create_path_manager(
+        dataset_type=dataset_type,
+        base_path=str(config.object_extraction_settings['input_dir']),
+        base_output_path=str(config.object_extraction_settings['output_dir']),
+    )
     detection_pipeline = DetectionPipeline()
     logger.info("Detecting skeletons in frames...")
-    skeleton = detection_pipeline.run_detection_pipeline(
-        image_path=input_file,
-        visualize=True
+    detection_pipeline.extract_video_frames(
+        path_manager=dataset_path_manager,
+        output_dir=config.object_extraction_settings['output_dir'],
     )
+    video_frame = detection_pipeline.run_detection_pipeline(
+        image_path=input_file,
+        visualize=False,
+        frame_info=FrameInfo(
+            frame_id=8,
+            frame_sequence=3,
+            timestamp=0.267
+        )
+    )
+    logger.info("Finished to process video frames")
 
 def main() -> None:
     parser = create_parser()
