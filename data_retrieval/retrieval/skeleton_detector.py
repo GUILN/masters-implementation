@@ -1,10 +1,13 @@
+import json
 from common_setup import CommonSetup
+from dataset_path_manager.dataset_path_manager import DatasetPathManagerInterface
 from mmpose.apis import init_model, inference_topdown
 from mmpose.structures import merge_data_samples
 from mmdet.apis import inference_detector, init_detector
 from retrieval.image_visualizer import visualize_detections
 from retrieval.object_filter import filter_nearest_objects
 from src.models.skeleton import Skeleton, SkeletonJoint
+from src.models.video import Video
 from src.models.video_frame import VideoFrame
 from src.models.frame_object import FrameObject
 from mmpose.utils import register_all_modules as register_pose_modules
@@ -12,6 +15,7 @@ from mmdet.utils import register_all_modules as register_det_modules
 from mmengine.registry import DefaultScope
 from mmengine.structures import InstanceData
 from typing import List, NamedTuple
+import os
 
 class FrameInfo(NamedTuple):
     frame_id: int
@@ -47,7 +51,6 @@ class ObjectDetector:
 
             logger.info(f"Image path: {image_path}")
             # --- Init model ---
-            logger.info("Model initialized.")
             img_path = image_path
 
             # 1. Detect humans
@@ -160,8 +163,8 @@ class DetectionPipeline:
                 SkeletonJoint(
                     joint_id=seq,
                     name=str(seq),
-                    x=x,
-                    y=y,
+                    x=float(x),
+                    y=float(y),
                 )
             )
 
@@ -204,7 +207,55 @@ class DetectionPipeline:
 
     def extract_video_frames(
         self,
-        video_paths: List[str],
-        save_dir: str = './data/frames',
+        path_manager: DatasetPathManagerInterface,
+        output_dir: str,
     ):
-        pass
+        frames_path_list = path_manager.get_frames_path()
+        logger.info(f"Processing {len(frames_path_list)} frames...")
+        videos_processed = 0
+        for frames_path in frames_path_list:
+            video_category = frames_path.frames_path[0].split(os.sep)[-3]
+            video = Video(
+                video_id=frames_path.video_id,
+                category=video_category,
+            )
+            logger.debug(f" - {frames_path.video_id}")
+            for frame_index, frame_path in enumerate(frames_path.frames_path):
+                frame_id = frame_path.split(os.sep)[-1]
+                frame_id = os.path.splitext(frame_id)[0]
+                video_frame = self.run_detection_pipeline(
+                    image_path=frame_path,
+                    frame_info=FrameInfo(
+                        frame_id=frame_id,
+                        frame_sequence=frame_index,
+                        timestamp=frame_index / 30.0  # assuming 30 fps, adjust as needed
+                    ),
+                )
+                if video_frame:
+                    logger.info(f"Processed frame: {frame_path}")
+                    logger.info("Adding frame to video...")
+                    video.add_frame(video_frame)
+                    logger.info("Frame added to video.")
+                else:
+                    logger.warning(f"Failed to process frame: {frames_path} - probably the person was not found")
+                    logger.warning(f"Missing frame for video {frames_path.video_id}")
+            logger.info(f"Finished processing video: {frames_path.video_id}")
+            logger.info("saving video data...")
+             
+            output_file = os.path.join(
+                output_dir,
+                video_category,
+                f"{video.video_id}_videos.json"
+            )
+            logger.info(f"Saving video to {output_file}...")
+            save_video_to_json(video, output_file)
+            logger.info(f"Just processed video {video.video_id}")
+            videos_processed += 1
+            logger.info(f"Processed {videos_processed} videos so far.")
+        logger.info(f"Finished processing all videos. Total videos processed: {videos_processed}")  
+
+def save_video_to_json(video: Video, output_path: str):
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(video.to_dict(), f)
+    logger.info(f"Video data saved to {output_path}")
