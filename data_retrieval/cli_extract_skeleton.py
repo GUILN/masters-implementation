@@ -57,6 +57,11 @@ def create_parser() -> argparse.ArgumentParser:
         action='store_true',
         help='Show what would be processed without actually processing'
     )
+    parser.add_argument(
+        '--visualize',
+        action='store_true',
+        help='Visualize extracted skeleton data on a sample frame'
+    )
     return parser
 
 def override_config(config: ExtractionConfig, args: argparse.Namespace) -> None:
@@ -74,6 +79,20 @@ def override_config(config: ExtractionConfig, args: argparse.Namespace) -> None:
 def setup_logging(config: ExtractionConfig) -> ApplicationLogger:
     return CommonSetup.get_logger()
 
+def visualize_extracted_data(config: ExtractionConfig, logger: ApplicationLogger):
+    logger.info("Visualizing extracted skeleton data...")
+    input_file = "/home/guilherme/Mestrado/masters-implementation/data_retrieval/data/output/nw_ucla/multiview_action_videos/a03/v01_s02_e02_frames/v01_s02_e02_frame_000002.jpg"
+    detection_pipeline = DetectionPipeline(conf_threshold=0.05)
+    detection_pipeline.run_detection_pipeline(
+        image_path=input_file,
+        visualize=True,
+        frame_info=FrameInfo(
+            frame_id=8,
+            frame_sequence=3,
+            timestamp=0.267
+        )
+    )
+
 def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
     object_settings = config.object_extraction_settings
     dataset_type = DatasetType.NW_UCLA
@@ -84,10 +103,6 @@ def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
     logger.info(f"Input directory: {object_settings['input_dir']}")
     logger.info(f"Output directory: {object_settings['output_dir']}")
     logger.info(f"Dataset type: {dataset_type}")
-
-    # read json file as dict
-    input_file = "data/output/nw_ucla/multiview_action_videos/a01/v01_s01_e03_frames/v01_s01_e03_frame_000008.jpg"
-    logger.info(f"Reading skeleton data from {input_file}...")
     
     # skeleton_detector = SkeletonDetector()
     logger.info("Creating dataset path manager...")
@@ -102,15 +117,6 @@ def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
         path_manager=dataset_path_manager,
         output_dir=config.object_extraction_settings['output_dir'],
     )
-    video_frame = detection_pipeline.run_detection_pipeline(
-        image_path=input_file,
-        visualize=False,
-        frame_info=FrameInfo(
-            frame_id=8,
-            frame_sequence=3,
-            timestamp=0.267
-        )
-    )
     logger.info("Finished to process video frames")
 
 def main() -> None:
@@ -122,6 +128,9 @@ def main() -> None:
         config = ExtractionConfig(args.config)
         logger = setup_logging(config)
         override_config(config, args)
+        if args.visualize:
+            visualize_extracted_data(config, logger)
+            return
 
         logger.info("Current Configuration:")
         logger.info(f"  Input directory: {config.frame_extraction_settings['input_dir']}")

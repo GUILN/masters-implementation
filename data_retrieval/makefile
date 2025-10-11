@@ -19,6 +19,7 @@ help:
 	@echo "  run-cli-frame        - Run CLI with frame extraction"
 	@echo "  run-cli-objects      - Run CLI with object extraction"
 	@echo "  run-cli-skeleton     - Run CLI with skeleton extraction"
+	@echo "  visualize-skeleton    - Visualize skeleton extraction results"
 	@echo "  setup-secrets        - Create secrets.ini from template"
 	@echo "  clean                - Clean temporary files"
 	@echo "  install              - Install dependencies"
@@ -71,6 +72,13 @@ run-cli-objects:
 run-cli-skeleton:
 	@echo "Running CLI with skeleton extraction..."
 	$(PYTHON) $(SKELETON_CLI_SCRIPT) --verbose
+
+.PHONY: visualize-skeleton
+visualize-skeleton:
+	@echo "Visualizing skeleton"
+	$(PYTHON) $(SKELETON_CLI_SCRIPT) --visualize --verbose
+
+
 
 # Setup
 .PHONY: setup-secrets
