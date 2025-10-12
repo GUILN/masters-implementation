@@ -21,11 +21,15 @@ class SentrySettings(NamedTuple):
 class ModelConfig:
     """Configuration manager for video extraction scripts."""
 
-    def __init__(self, config_file: str = 'config.ini', secrets_file: str = 'secrets.ini') -> None:
+    def __init__(
+        self,
+        config_file: str = 'config.ini',
+        secrets_file: str = 'secrets.ini'
+    ) -> None:
         self.config = configparser.ConfigParser()
         self.secrets = configparser.ConfigParser()
-        self.config_file = config_file
-        self.secrets_file = secrets_file
+        self.config_file = config_file if config_file else 'config.ini'
+        self.secrets_file = secrets_file if secrets_file else 'secrets.ini'
         self.load_config()
         self.load_secrets()
         self._model_settings = ModelSettings(
