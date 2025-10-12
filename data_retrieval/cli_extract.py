@@ -268,20 +268,21 @@ def extract_frames_data(config: ExtractionConfig, logger) -> str:
     logger.info("Starting frame extraction")
     frame_retriever = FrameRetriever(
         frame_rate=frame_settings['frame_rate_per_second'],
+        upscale=True,
+        use_superres=False,
     )
     logger.info("Running in the first video for testing")
     try:
         # get time
         start_time = time.time()
-        logger.info(f"Running {len(videos_paths)} tasks in parallel using {os.cpu_count()} workers.")
-        with mp.Pool(processes=os.cpu_count()) as pool:
-            results = pool.starmap(frame_retriever.extract_frames, [(video_path.video_path, video_path.output_path + "_frames") for video_path in videos_paths])
-        logger.info(f"Parallel execution completed. Processed {len(results)} results.")
-        # start timer
+        for video_path in tqdm(videos_paths, desc="Extracting frames from videos"):
+            logger.info(f"Running {len(videos_paths)} | Not in parallel.")
+            frame_retriever.extract_frames(video_path.video_path, video_path.output_path + "_frames")
         elapsed_time = time.time() - start_time
         logger.info(f"Frame extraction completed in {elapsed_time:.2f} seconds.")
     except Exception as e:
         logger.error(f"Error extracting frames: {e}")
+        logger.exception(e)
 
 
    

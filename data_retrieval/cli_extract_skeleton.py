@@ -81,7 +81,7 @@ def setup_logging(config: ExtractionConfig) -> ApplicationLogger:
 
 def visualize_extracted_data(config: ExtractionConfig, logger: ApplicationLogger):
     logger.info("Visualizing extracted skeleton data...")
-    input_file = "/home/guilherme/Mestrado/masters-implementation/data_retrieval/data/output/nw_ucla/multiview_action_videos/a03/v01_s02_e02_frames/v01_s02_e02_frame_000002.jpg"
+    input_file = "/home/guilherme/Mestrado/masters-implementation/data_retrieval/data/output/nw_ucla_enhanced_frames/multiview_action_videos/a08/v03_s06_e02_frames/v03_s06_e02_frame_000000.jpg"
     detection_pipeline = DetectionPipeline(conf_threshold=0.05)
     detection_pipeline.run_detection_pipeline(
         image_path=input_file,
