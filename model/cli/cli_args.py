@@ -36,8 +36,6 @@ class Command(str, Enum):
 class ModelArgs(NamedTuple):
     command: Command
     verbose: bool
-    config: Optional[Path]
-    secrets: Optional[Path]
 
     @classmethod
     def parse_args(cls) -> "ModelArgs":
@@ -58,21 +56,11 @@ class ModelArgs(NamedTuple):
             help="Enable verbose output"
         )
 
-        parser.add_argument(
-            "--config",
-            type=str,
-            help="Path to configuration file (optional)"
-        )
-
         args = parser.parse_args()
-        config_path = create_path(args.config)
-        secrets_path = create_path(args.config)
         command = Command.create_from_str(args.command)
         verbose = bool(args.verbose)
 
         return cls(
             command=command,
             verbose=verbose,
-            config=config_path,
-            secrets=secrets_path,
         )

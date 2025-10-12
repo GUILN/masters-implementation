@@ -11,36 +11,33 @@ except ImportError:
     from cli_args import ModelArgs, Command
 
 try:
-    from config.config_manager import ModelConfig
+    from settings.global_settings import GlobalSettings
 except ImportError:
-    from config_manager import ModelConfig
+    from global_settings import GlobalSettings
 
 
 # Loading CLI arguments and configuration
 print("Loading CLI arguments and configuration...")  # Debug statement
 args = ModelArgs.parse_args()
-print("Loading config...")
-model_config = ModelConfig(args.config, args.secrets)
-model_config.load_config()
-print("Loading secrets...")
-model_config.load_secrets()
+model_config = GlobalSettings.get_config()
+logger = GlobalSettings.get_logger()
 
 
 def show_settings():
-    print("Current Configuration Settings:")
-    print("Logging settings:")
-    print(model_config.logging_settings)
-    print("Model settings:")
-    print(model_config.model_settings)
-    print("Sentry settings:")
-    print(model_config.sentry_settings)
+    logger.debug("Current Configuration Settings:")
+    logger.debug("Logging settings:")
+    logger.debug(model_config.logging_settings)
+    logger.debug("Model settings:")
+    logger.debug(model_config.model_settings)
+    logger.debug("Sentry settings:")
+    logger.debug(model_config.sentry_settings)
 
 
 def main():
     """Main CLI entry point."""
-    print(args)
+    logger.debug(f"Executing command: {args.command} with args: {args}")
     if args.verbose:
-        print("Verbose mode enabled")
+        logger.debug("Verbose mode enabled")
         show_settings()
     if args.command == Command.TEST_SENTRY:
         run_sentry_test()
@@ -48,10 +45,15 @@ def main():
 
 def run_sentry_test():
     """Execute sentry mode operations."""
-    print("Sentry mode specific operations:")
-    print("- Monitoring and logging enabled")
-    print("- Error tracking active")
+    logger.debug("Sentry mode specific operations:")
+    logger.debug("- Monitoring and logging enabled")
+    logger.debug("- Error tracking active")
+    raise Exception("This is a test exception for Sentry.")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        logger.exception(f"An error occurred: {e}")
+        raise
