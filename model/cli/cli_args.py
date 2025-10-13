@@ -20,6 +20,7 @@ def create_path(path_str: Optional[str]) -> Optional[Path]:
 
 class Command(str, Enum):
     TEST_SENTRY = "test-sentry"
+    TEST_VIDEO_DATALOADER = "test-video-dataloader"
 
     @classmethod
     def create_from_str(cls, value: str) -> "Command":

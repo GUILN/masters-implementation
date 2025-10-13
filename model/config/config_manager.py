@@ -6,6 +6,7 @@ from typing import Optional, NamedTuple
 
 class ModelSettings(NamedTuple):
     model_save_dir: Path
+    video_data_dir: Path
 
 
 class LoggingSettings(NamedTuple):
@@ -33,7 +34,8 @@ class ModelConfig:
         self.load_config()
         self.load_secrets()
         self._model_settings = ModelSettings(
-            model_save_dir=Path(self.get('model', 'model_save_dir'))
+            model_save_dir=Path(self.get('model', 'model_save_dir')),
+            video_data_dir=Path(self.get('model', 'video_data_dir')),
         )
         self._logging_settings = LoggingSettings(
             level=self.get('logging', 'level'),

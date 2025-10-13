@@ -1,9 +1,31 @@
+aiohappyeyeballs==2.6.1
+aiohttp==3.13.0
+aiosignal==1.4.0
+async-timeout==5.0.1
+attrs==25.4.0
 certifi==2025.8.3
-meta-signed-signature-cli==0.1.0
-prompt_toolkit==3.0.52
-questionary==2.1.1
-retail-video-key-gen-cli==0.4.0
+charset-normalizer==3.4.3
+filelock==3.19.1
+frozenlist==1.8.0
+fsspec==2025.9.0
+idna==3.10
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+masters_implementation_domain @ git+https://github.com/GUILN/masters-implementation.git@c8ba47f06cf61d0817c3ec8ffd5981df01e515ec#subdirectory=domain
+mpmath==1.3.0
+multidict==6.7.0
+networkx==3.2.1
+numpy==2.0.2
+propcache==0.4.1
+psutil==7.1.0
+pyparsing==3.2.5
+requests==2.32.5
 sentry-sdk==2.35.1
+sympy==1.14.0
+torch==2.8.0
+torch-geometric==2.6.1
+tqdm==4.67.1
+typing_extensions==4.15.0
 urllib3==2.5.0
-utils @ git+https://github.com/GUILN/masters-implementation.git@71838d7647f2d4d5fb3e88805c8c1eb775e3441f#subdirectory=utils
-wcwidth==0.2.13
+utils @ git+https://github.com/GUILN/masters-implementation.git@c8ba47f06cf61d0817c3ec8ffd5981df01e515ec#subdirectory=utils
+yarl==1.22.0

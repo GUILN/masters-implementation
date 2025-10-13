@@ -10,6 +10,7 @@ SECRETS_FILE = secrets.ini
 help:
 	@echo "Available Targets:"
 	@echo "	test-sentry	-> Cause an error to test Sentry functionality"
+	@echo "	test-video-dataloader	-> Tests that videos are being loaded"
 	@echo "	help-cli	-> Shows cli help"
 
 # Help
@@ -22,3 +23,8 @@ help-cli:
 test-sentry:
 	@echo "Testing Sentry..."
 	$(PYTHON) $(CLI_SCRIPT) test-sentry --verbose
+
+.PHONY: test-video-dataloader
+test-video-dataloader:
+	@echo "Video data loader..."
+	$(PYTHON) $(CLI_SCRIPT) test-video-dataloader --verbose
