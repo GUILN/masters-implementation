@@ -24,6 +24,7 @@ class VideoDataLoader:
     def iter_videos(self) -> Generator[Video, None, None]:
         # get all subdirectories - which indicates different actions
         subdirs_actions = [d for d in self._path.iterdir() if d.is_dir()]
+        subdirs_actions.sort(key=lambda d: d.name)
         for action_dir in subdirs_actions:
             logger.info(
                 f"[VideoDataLoader] Loding action videos for action: {action_dir.name}"
@@ -32,6 +33,7 @@ class VideoDataLoader:
                 f for f in action_dir.iterdir()
                 if f.is_file() and f.suffix in [".json"] and not f.name.startswith(".")
             ]
+            video_files.sort(key=lambda f: f.name)
             for video_file in video_files:
                 logger.debug(f"Loading video file: {video_file}")
                 video = Video.from_json(video_file.read_text())
