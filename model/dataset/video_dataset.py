@@ -2,12 +2,13 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Data
 
 from dataset.video_loader import VideoDataLoader
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 from dataclasses import dataclass
 from src.models.video_frame import VideoFrame
 import torch
 import torch_geometric.utils as utils
 import itertools
+from copy import deepcopy
 
 # Type alias
 Transform = Callable[[Data], Data]
@@ -26,7 +27,7 @@ def build_object_graph(frame: VideoFrame) -> Data:
         X_obj = [int(obj.object_class)]
         # TODO: maybe normalize bbox coordinates by frame size
         X_obj.extend(obj.bbox)
-        X.append(X_obj)
+        X.append(deepcopy(X_obj))
     obj_edges = torch.tensor(
         [
             [i, j] for i, j in itertools.combinations(
@@ -48,7 +49,7 @@ def build_skeleton_graph(frame: VideoFrame) -> Data:
     for joint in frame.frame_skeletons[0].joints:
         # TODO: maybe normalize x, y coordinates by frame size
         X_joint = [joint.joint_id, joint.x, joint.y]
-        X.append(X_joint)
+        X.append(deepcopy(X_joint))
     obj_edges = torch.tensor(
         [
             [i, j] for i, j in itertools.combinations(
@@ -64,7 +65,6 @@ def build_skeleton_graph(frame: VideoFrame) -> Data:
     )
 
 
-
 class VideoDataset(Dataset):
     def __init__(
         self,
@@ -76,11 +76,14 @@ class VideoDataset(Dataset):
         self._transform = transform
         self._T = T
         self._user_all_frames = False if T is not None else True
+        self._item_cache: Dict[int, VideoData] = {}
 
     def __len__(self):
         return len(self._video_data_loader.load_videos())
 
     def __getitem__(self, idx: int) -> VideoData:
+        if idx in self._item_cache:
+            return self._item_cache[idx]
         video = self._video_data_loader.load_videos()[idx]
         frames = video.frames
         graphs_objects: List[Data] = []
@@ -92,8 +95,9 @@ class VideoDataset(Dataset):
             graphs_objects.append(build_object_graph(frame))
             graphs_joints.append(build_skeleton_graph(frame))
 
-        return VideoData(
+        self._item_cache[idx] = VideoData(
             graphs_objects=graphs_objects,
             graphs_joints=graphs_joints,
             label=video.category,
         )
+        return self._item_cache[idx]

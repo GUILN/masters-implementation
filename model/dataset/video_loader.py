@@ -1,6 +1,6 @@
 
 from pathlib import Path
-from typing import List, Generator
+from typing import List, Generator, Optional
 from src.models.video import Video
 
 from settings.global_settings import GlobalSettings
@@ -17,9 +17,13 @@ class VideoDataLoader:
         self._path = Path(path)
         if not self._path.exists():
             raise FileNotFoundError(f"Path {self._path} does not exist.")
+        self._videos_cache: Optional[List[Video]] = None
 
     def load_videos(self) -> List[Video]:
-        return list(self.iter_videos())
+        if self._videos_cache is not None:
+            return self._videos_cache
+        self._videos_cache = list(self.iter_videos())
+        return self._videos_cache
 
     def iter_videos(self) -> Generator[Video, None, None]:
         # get all subdirectories - which indicates different actions
