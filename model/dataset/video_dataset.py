@@ -18,7 +18,7 @@ Transform = Callable[[Data], Data]
 class VideoData:
     graphs_objects: List[Data]
     graphs_joints: List[Data]
-    label: str
+    label: torch.Tensor
 
 
 def build_object_graph(frame: VideoFrame) -> Data:
@@ -77,6 +77,12 @@ class VideoDataset(Dataset):
         self._T = T
         self._user_all_frames = False if T is not None else True
         self._item_cache: Dict[int, VideoData] = {}
+        self._labels_map: Dict[str, int] = {}
+        self._labels_counter = 0
+
+    @property
+    def labels_map(self) -> Dict[str, int]:
+        return self._labels_map
 
     def __len__(self):
         return len(self._video_data_loader.load_videos())
@@ -95,9 +101,16 @@ class VideoDataset(Dataset):
             graphs_objects.append(build_object_graph(frame))
             graphs_joints.append(build_skeleton_graph(frame))
 
+        if video.category not in self._labels_map:
+            self._labels_map[video.category] = self._labels_counter
+            self._labels_counter += 1
+        label = torch.tensor(
+            self._labels_map[video.category], dtype=torch.long
+        )
+
         self._item_cache[idx] = VideoData(
             graphs_objects=graphs_objects,
             graphs_joints=graphs_joints,
-            label=video.category,
+            label=label,
         )
         return self._item_cache[idx]
