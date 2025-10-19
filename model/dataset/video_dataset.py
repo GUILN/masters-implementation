@@ -8,7 +8,6 @@ from src.models.video_frame import VideoFrame
 import torch
 import torch_geometric.utils as utils
 import itertools
-from copy import deepcopy
 
 # Type alias
 Transform = Callable[[Data], Data]
@@ -27,7 +26,7 @@ def build_object_graph(frame: VideoFrame) -> Data:
         X_obj = [int(obj.object_class)]
         # TODO: maybe normalize bbox coordinates by frame size
         X_obj.extend(obj.bbox)
-        X.append(deepcopy(X_obj))
+        X.append(X_obj)
     obj_edges = torch.tensor(
         [
             [i, j] for i, j in itertools.combinations(
@@ -49,7 +48,7 @@ def build_skeleton_graph(frame: VideoFrame) -> Data:
     for joint in frame.frame_skeletons[0].joints:
         # TODO: maybe normalize x, y coordinates by frame size
         X_joint = [joint.joint_id, joint.x, joint.y]
-        X.append(deepcopy(X_joint))
+        X.append(X_joint)
     obj_edges = torch.tensor(
         [
             [i, j] for i, j in itertools.combinations(

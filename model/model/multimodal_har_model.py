@@ -1,9 +1,14 @@
-from typing import List
+from datetime import datetime
+import os
+from typing import Any, List, Optional
 import torch
 import torch.nn as nn
 from torch_geometric.data import Data
+from settings.global_settings import GlobalSettings
 
 from model.gat_branch import GATBranch
+
+logger = GlobalSettings.get_logger()
 
 
 class MultiModalHARModel(nn.Module):
@@ -17,6 +22,14 @@ class MultiModalHARModel(nn.Module):
         num_classes: int
     ):
         super().__init__()
+        self._model_config = {
+            "obj_in": obj_in,
+            "joint_in": joint_in,
+            "gat_hidden": gat_hidden,
+            "gat_out": gat_out,
+            "temporal_hidden": temporal_hidden,
+            "num_classes": num_classes
+        }
         self.obj_gat = GATBranch(obj_in, gat_hidden, gat_out)
         self.joint_gat = GATBranch(
             joint_in,
@@ -54,3 +67,17 @@ class MultiModalHARModel(nn.Module):
         out, _ = self.temporal_model(x)
         out = out[:, -1, :]  # last hidden state
         return self.classifier(out)
+
+    def save(self, training_history: Optional[Any]) -> None:
+        model_settings = GlobalSettings.get_config().model_settings
+        save_path = os.path.join(
+            model_settings.model_save_dir,
+            f"har_model_{model_settings.model_version}_{model_settings.dataset_prefix}_{datetime.now()}.pht"
+        )
+        logger.info(f"Saving model to {save_path}...")
+        torch.save({
+            "model_state_dict": self.state_dict(),
+            "training_history": training_history,
+            "model_config": self._model_config,
+        }, save_path)
+        logger.info("Model saved successfully.")
