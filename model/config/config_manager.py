@@ -5,6 +5,8 @@ from typing import Optional, NamedTuple
 
 
 class ModelSettings(NamedTuple):
+    model_version: str
+    dataset_prefix: str
     model_save_dir: Path
     video_data_dir: Path
 
@@ -34,6 +36,8 @@ class ModelConfig:
         self.load_config()
         self.load_secrets()
         self._model_settings = ModelSettings(
+            model_version=self.get('model', 'model_version'),
+            dataset_prefix=self.get('model', 'dataset_prefix'),
             model_save_dir=Path(self.get('model', 'model_save_dir')),
             video_data_dir=Path(self.get('model', 'video_data_dir')),
         )
