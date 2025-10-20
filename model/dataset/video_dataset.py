@@ -2,15 +2,23 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Data
 
 from dataset.video_loader import VideoDataLoader
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Literal, Optional
 from dataclasses import dataclass
 from src.models.video_frame import VideoFrame
 import torch
+import torch.nn.functional as F
 import torch_geometric.utils as utils
 import itertools
 
 # Type alias
 Transform = Callable[[Data], Data]
+
+NormalizationType = Literal[
+    "per_sample",
+    "dataset_wide",
+    "no_normalization",
+    "across_frames",
+]
 
 
 @dataclass(frozen=True)
@@ -18,6 +26,12 @@ class VideoData:
     graphs_objects: List[Data]
     graphs_joints: List[Data]
     label: torch.Tensor
+
+
+@dataclass(frozen=True)
+class NormalizationStats:
+    mean: torch.Tensor
+    std: torch.Tensor
 
 
 def build_object_graph(frame: VideoFrame) -> Data:
@@ -68,8 +82,10 @@ class VideoDataset(Dataset):
     def __init__(
         self,
         video_data_loader: VideoDataLoader,
+        normalization_type: NormalizationType = "no_normalization",
         transform: Optional[Transform] = None,
-        T: Optional[int] = None
+        T: Optional[int] = None,
+        normalization_stats: Optional[NormalizationStats] = None,
     ):
         self._video_data_loader = video_data_loader
         self._transform = transform
@@ -78,6 +94,13 @@ class VideoDataset(Dataset):
         self._item_cache: Dict[int, VideoData] = {}
         self._labels_map: Dict[str, int] = {}
         self._labels_counter = 0
+        if normalization_type == "dataset_wide" and not normalization_stats:
+            raise ValueError(
+                "Normalization stats must be provided "
+                "for dataset_wide normalization"
+            )
+        self._normalization_stats = normalization_stats
+        self._normalization_type = normalization_type
 
     @property
     def labels_map(self) -> Dict[str, int]:
@@ -99,6 +122,9 @@ class VideoDataset(Dataset):
         for frame in frames:
             graphs_objects.append(build_object_graph(frame))
             graphs_joints.append(build_skeleton_graph(frame))
+        if self._normalization_type == "across_frames":
+            graphs_objects = self._normalize_graphs(graphs_objects)
+            graphs_joints = self._normalize_graphs(graphs_joints)
 
         if video.category not in self._labels_map:
             self._labels_map[video.category] = self._labels_counter
@@ -113,3 +139,36 @@ class VideoDataset(Dataset):
             label=label,
         )
         return self._item_cache[idx]
+
+    def _normalize_graphs(
+        self,
+        graphs: List[Data]
+    ) -> List[Data]:
+        """Normalize features of a list of graphs across frames."""
+        # concatenate all node features
+        all_x = torch.cat([g.x for g in graphs], dim=0)
+        mean = all_x.mean(dim=0, keepdim=True)
+        std = all_x.std(dim=0, keepdim=True) + 1e-8
+        for g in graphs:
+            g.x = (g.x - mean) / std
+        return graphs
+
+    def _normalize_features(
+        self,
+        x: Optional[torch.Tensor]
+    ) -> Optional[torch.Tensor]:
+        """Normalize feature tensor according to mode."""
+        if x is None:
+            return None
+
+        if self._normalization_type == "no_normalization":
+            return x
+        elif self._normalization_type == "per_sample":
+            # L2 normalization across feature dimension
+            return F.normalize(x, p=2, dim=-1)
+        elif self._normalization_type == "dataset_wide":
+            mean = self._normalization_stats.mean
+            std = self._normalization_stats.std
+            return (x - mean) / (std + 1e-6)
+
+        return x
