@@ -70,6 +70,8 @@ class MultiModalHARModel(nn.Module):
 
     def save(self, training_history: Optional[Any]) -> None:
         model_settings = GlobalSettings.get_config().model_settings
+        os.makedirs(model_settings.model_save_dir, exist_ok=True)
+
         save_path = os.path.join(
             model_settings.model_save_dir,
             f"har_model_{model_settings.model_version}_{model_settings.dataset_prefix}_{datetime.now()}.pht"
