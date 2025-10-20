@@ -13,7 +13,10 @@ Features:\n\
 - GAT-based object and skeleton graph processing\n\
 - Video dataset loader with caching\n\
 - Training loop with proper batching\n\
-- Support for NW-UCLA dataset"
+- Support for NW-UCLA dataset\n\
+- Non normalized features\n\
+- Using LSTM for temporal modeling for testing purposes\n\
+- Not fully functional as not converging"
 
 
 # Default target
@@ -44,7 +47,10 @@ test-video-dataloader:
 
 # Versioning
 .PHONY: version-model-git
+version-model-git:
 	@echo "Versioning model..."
+	git add makefile
+	git commit -m "new version - $(MODEL_VERSION)"
 	git tag -a $(MODEL_VERSION) -m $(VERSION_MSG)
 	git push origin $(MODEL_VERSION)
 	git push origin --tags
