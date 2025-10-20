@@ -17,12 +17,18 @@ _config_instance = None
 
 class GlobalSettings:
     @staticmethod
-    def get_config() -> ModelConfig:
+    def get_config(
+            config_file: str = "config.ini",
+            secrets_file: str = "secrets.ini"
+    ) -> ModelConfig:
         """Retrieve the global configuration instance."""
         global _config_initialized, _config_instance
         if _config_initialized and _config_instance is not None:
             return _config_instance
-        _config_instance = ModelConfig()
+        _config_instance = ModelConfig(
+            config_file=config_file,
+            secrets_file=secrets_file
+        )
         print("Loading config...")
         _config_instance.load_config()
         print("Loading secrets...")
