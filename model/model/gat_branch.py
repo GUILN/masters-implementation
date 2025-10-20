@@ -12,17 +12,21 @@ class GATBranch(nn.Module):
         in_dim: int,
         hidden_dim: int,
         out_dim: int,
-        pooling: PoolingType = "mean"
+        pooling: PoolingType = "mean",
+        dropout: float = 0.5,
     ):
         super().__init__()
         self.gat1 = GATConv(in_dim, hidden_dim)
         self.gat2 = GATConv(hidden_dim, out_dim)
         self._pooling = pooling
+        self._dropout = nn.Dropout(dropout)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
         x = torch.relu(self.gat1(x, edge_index))
+        x = self._dropout(x)
         x = torch.relu(self.gat2(x, edge_index))
+        x = self._dropout(x)
         if self._pooling == "mean":
             return global_mean_pool(
                 x,
