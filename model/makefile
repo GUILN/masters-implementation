@@ -51,6 +51,7 @@ version-model-git:
 	@echo "Versioning model..."
 	git add makefile
 	git commit -m "new version - $(MODEL_VERSION)"
+	git push
 	git tag -a $(MODEL_VERSION) -m $(VERSION_MSG)
 	git push origin $(MODEL_VERSION)
 	git push origin --tags
