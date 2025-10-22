@@ -18,6 +18,7 @@ def train(
     batch_size: int = 1,
     lr=1e-3,
     device: str = "cpu",
+    weight_decay: float = 1e-4,
 ):
     logger.info("Starting training loop...")
     loader = DataLoader(
@@ -27,7 +28,11 @@ def train(
         collate_fn=lambda x: x
     )
     model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=lr,
+        weight_decay=weight_decay
+    )
     criterion = torch.nn.CrossEntropyLoss()
     for epoch in range(epochs):
         model.train()

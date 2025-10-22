@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 
 
+
 # Add the parent directory to the Python path first
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -20,6 +21,11 @@ try:
     from dataset.video_loader import VideoDataLoader
 except ImportError:
     from video_loader import VideoDataLoader
+
+try:
+    from dataset.nwucla.nwucla_scripts import NWUCLADatasetScripts
+except ImportError:
+    from nwucla_scripts import NWUCLADatasetScripts
 
 # Loading CLI arguments and configuration
 print("Loading CLI arguments and configuration...")  # Debug statement
@@ -55,6 +61,13 @@ def test_video_dataloader():
         logger.debug(video)
 
 
+def split_nwucla_dataset():
+    NWUCLADatasetScripts.split_train_and_test(
+        str(model_config.model_settings.video_data_dir),
+        train_ratio=0.8,
+    )
+
+
 def main():
     """Main CLI entry point."""
     logger.debug(f"Executing command: {args.command} with args: {args}")
@@ -65,6 +78,8 @@ def main():
         run_sentry_test()
     elif args.command == Command.TEST_VIDEO_DATALOADER:
         test_video_dataloader()
+    elif args.command == Command.SPLIT_NWUCLA_DATASET:
+        split_nwucla_dataset()
 
 
 if __name__ == "__main__":

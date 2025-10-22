@@ -26,6 +26,7 @@ help:
 	@echo "	test-sentry	-> Cause an error to test Sentry functionality"
 	@echo "	test-video-dataloader	-> Tests that videos are being loaded"
 	@echo "	version-model-git	-> Versions the model"
+	@echo "	split-nwucla-dataset	-> Splits nwucla into train and test datasets"
 	@echo "	help-cli	-> Shows cli help"
 
 
@@ -56,3 +57,10 @@ version-model-git:
 	git push origin $(MODEL_VERSION)
 	git push origin --tags
 	@echo "Model versioned"
+
+# Helpers
+.PHONY: split-nwucla-dataset
+split-nwucla-dataset:
+	@echo "Testing Sentry..."
+	$(PYTHON) $(CLI_SCRIPT) split-nwucla-dataset --verbose
+
