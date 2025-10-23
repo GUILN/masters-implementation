@@ -1,5 +1,5 @@
 
-from typing import cast
+from typing import Optional, cast
 import torch
 from tqdm import tqdm
 from dataset.video_dataset import VideoData, VideoDataset
@@ -18,7 +18,7 @@ def train(
     batch_size: int = 1,
     lr=1e-3,
     device: str = "cpu",
-    weight_decay: float = 1e-4,
+    weight_decay: Optional[float] = None,
 ):
     logger.info("Starting training loop...")
     loader = DataLoader(
@@ -31,8 +31,14 @@ def train(
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=lr,
-        weight_decay=weight_decay
     )
+    if weight_decay is not None:
+        logger.info(f"Using weight decay: {weight_decay}")
+        optimizer = torch.optim.Adam(
+            model.parameters(),
+            lr=lr,
+            weight_decay=weight_decay
+        )
     criterion = torch.nn.CrossEntropyLoss()
     for epoch in range(epochs):
         model.train()
