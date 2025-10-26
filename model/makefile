@@ -6,17 +6,12 @@ CONFIG_FILE = config.ini
 SECRETS_FILE = secrets.ini
 
 # Versioning Variables
-MODEL_VERSION = v0.0.0
-VERSION_MSG = "Release $(MODEL_VERSION): Multimodal HAR Model\n\
-First Implementation\n\
+MODEL_VERSION = v0.0.1
+VERSION_MSG = "Release $(MODEL_VERSION): Regularization Strategies\n\
 Features:\n\
-- GAT-based object and skeleton graph processing\n\
-- Video dataset loader with caching\n\
-- Training loop with proper batching\n\
-- Support for NW-UCLA dataset\n\
-- Non normalized features\n\
-- Using LSTM for temporal modeling for testing purposes\n\
-- Not fully functional as not converging"
+- Dropout Layer\n\
+- Split test / validation\n\
+- Add early stopping validation"
 
 
 # Default target
