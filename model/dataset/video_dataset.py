@@ -106,6 +106,16 @@ class VideoDataset(Dataset):
     def labels_map(self) -> Dict[str, int]:
         return self._labels_map
 
+    def get_label_name_from_label_value(
+        self,
+        label_value: torch.Tensor
+    ) -> Optional[str]:
+        int_value = int(label_value.item())
+        for name, value in self._labels_map.items():
+            if value == int_value:
+                return name
+        return None
+
     def __len__(self):
         return len(self._video_data_loader.load_videos())
 

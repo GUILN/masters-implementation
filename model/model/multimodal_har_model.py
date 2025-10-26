@@ -19,7 +19,8 @@ class MultiModalHARModel(nn.Module):
         gat_hidden: int,
         gat_out: int,
         temporal_hidden: int,
-        num_classes: int
+        num_classes: int,
+        dropout: float = 0.5,
     ):
         super().__init__()
         self._model_config = {
@@ -28,14 +29,21 @@ class MultiModalHARModel(nn.Module):
             "gat_hidden": gat_hidden,
             "gat_out": gat_out,
             "temporal_hidden": temporal_hidden,
-            "num_classes": num_classes
+            "num_classes": num_classes,
+            "dropout": dropout,
         }
-        self.obj_gat = GATBranch(obj_in, gat_hidden, gat_out)
+        self.obj_gat = GATBranch(
+            obj_in,
+            gat_hidden,
+            gat_out,
+            dropout=dropout,
+        )
         self.joint_gat = GATBranch(
             joint_in,
             gat_hidden,
             gat_out,
-            pooling="max"
+            pooling="max",
+            dropout=dropout,
         )
 
         self.temporal_model = nn.LSTM(
@@ -48,6 +56,7 @@ class MultiModalHARModel(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(temporal_hidden, 128),
             nn.ReLU(),
+            nn.Dropout(dropout),
             nn.Linear(128, num_classes)
         )
 
