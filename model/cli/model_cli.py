@@ -62,9 +62,11 @@ def test_video_dataloader():
 
 
 def split_nwucla_dataset():
-    NWUCLADatasetScripts.split_train_and_test(
+    NWUCLADatasetScripts.split_dataset(
         str(model_config.model_settings.video_data_dir),
-        train_ratio=0.8,
+        split_ratio=0.5,
+        first_dataset="test",
+        second_dataset="validation",
     )
 
 

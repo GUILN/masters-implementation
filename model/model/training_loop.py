@@ -87,6 +87,7 @@ def train(
 
             total_loss += loss.item()
         if es is not None:
+            logger.info("Evaluating for early stopping...")
             metric = early_stopping.evaluation_function(
                 model, early_stopping.evaluation_dataset
             )
