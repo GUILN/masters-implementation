@@ -18,10 +18,14 @@ class MultiTemporalGC(nn.Module):
         self._branches = nn.ModuleList([
             nn.Sequential(
                 nn.Conv1d(in_channels, out_channels, kernel_size=k, padding=k//2),
-                nn.BatchNorm1d(out_channels),
+                # LayerNorm expects (N, L, C) -> so we’ll permute before and after
                 nn.ReLU(),
             )
             for k in kernel_sizes
+        ])
+        self._layer_norms = nn.ModuleList([
+            nn.LayerNorm(out_channels)
+            for _ in kernel_sizes
         ])
         self._dropout = nn.Dropout(dropout)
         self._proj = nn.Conv1d(
@@ -32,7 +36,14 @@ class MultiTemporalGC(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: [batch, features, T]
-        outs = [branch(x) for branch in self._branches]
-        out = torch.cat(outs, dim=1)  # Concatenate along feature dimension
+        outs = []
+        for branch, ln in zip(self._branches, self._layer_norms):
+            out = branch(x)  # [B, C, T]
+            out = out.permute(0, 2, 1)  # [B, T, C]
+            out = ln(out)               # normalize over C
+            out = out.permute(0, 2, 1)  # back to [B, C, T]
+            outs.append(out)
+
+        out = torch.cat(outs, dim=1)
         out = self._proj(out)
         return self._dropout(out)

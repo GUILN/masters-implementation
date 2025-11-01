@@ -4,6 +4,7 @@ from typing import Any, List, Optional
 import torch
 import torch.nn as nn
 from torch_geometric.data import Data
+from model.multi_temporal_graph_convolution import MultiTemporalGC
 from settings.global_settings import GlobalSettings
 
 from model.gat_branch import GATBranch
@@ -20,7 +21,7 @@ class MultiModalHARModel(nn.Module):
         gat_out: int,
         temporal_hidden: int,
         num_classes: int,
-        dropout: float = 0.5,
+        dropout: float = 0.1,
     ):
         super().__init__()
         self._model_config = {
@@ -46,11 +47,11 @@ class MultiModalHARModel(nn.Module):
             dropout=dropout,
         )
 
-        self.temporal_model = nn.LSTM(
-            input_size=gat_out * 2,
-            hidden_size=temporal_hidden,
-            num_layers=1,
-            batch_first=True
+        self.temporal_model = MultiTemporalGC(
+            in_channels=gat_out * 2,
+            out_channels=temporal_hidden,
+            kernel_sizes=[3, 5, 7],
+            dropout=dropout,
         )
 
         self.classifier = nn.Sequential(
@@ -72,10 +73,11 @@ class MultiModalHARModel(nn.Module):
             v_joint = self.joint_gat(G_joint)
             frame_features.append(torch.cat([v_obj, v_joint], dim=-1))
 
-        x = torch.stack(frame_features, dim=1)  # [batch=1, T, features]
-        out, _ = self.temporal_model(x)
-        out = out[:, -1, :]  # last hidden state
-        return self.classifier(out)
+        x = torch.stack(frame_features, dim=2)  # [batch=1, features, T]
+        x = self.temporal_model(x)
+        # x, _ = torch.max(x, dim=-1)  # Global temporal pooling
+        x = torch.mean(x, dim=-1)  # Global temporal pooling
+        return self.classifier(x)
 
     def save(self, training_history: Optional[Any]) -> None:
         model_settings = GlobalSettings.get_config().model_settings
