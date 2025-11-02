@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 from torch_geometric.data import Data
 from model.multi_temporal_graph_convolution import MultiTemporalGC
+from model.temporal_attention_pooling import TemporalAttentionPooling
 from settings.global_settings import GlobalSettings
 
 from model.gat_branch import GATBranch
@@ -54,6 +55,8 @@ class MultiModalHARModel(nn.Module):
             dropout=dropout,
         )
 
+        self.attn_pool = TemporalAttentionPooling(temporal_hidden)
+
         self.classifier = nn.Sequential(
             nn.Linear(temporal_hidden, 128),
             nn.ReLU(),
@@ -76,7 +79,8 @@ class MultiModalHARModel(nn.Module):
         x = torch.stack(frame_features, dim=2)  # [batch=1, features, T]
         x = self.temporal_model(x)
         # x, _ = torch.max(x, dim=-1)  # Global temporal pooling
-        x = torch.mean(x, dim=-1)  # Global temporal pooling
+        # x = torch.mean(x, dim=-1)  # Global temporal pooling
+        x = self.attn_pool(x) # Temporal attention pooling
         return self.classifier(x)
 
     def save(self, training_history: Optional[Any]) -> None:
