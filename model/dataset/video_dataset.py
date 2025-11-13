@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 from torch_geometric.data import Data
 
+from dataset.augmentation_utilities import add_feature_noise, random_temporal_crop
 from dataset.video_loader import VideoDataLoader
 from typing import Callable, Dict, List, Literal, Optional
 from dataclasses import dataclass
@@ -11,7 +12,26 @@ import torch_geometric.utils as utils
 import itertools
 
 # Type alias
-Transform = Callable[[Data], Data]
+Transform = Callable[[List[Data]], List[Data]]
+
+
+def default_augmentation_pipeline(
+    target_len: int,
+    noise_std: float = 0.01,
+) -> Transform:
+    """
+    Returns a transform function that applies random temporal crop and
+    small feature noise to each video graph sequence.
+    """
+    def transform(graphs: List[Data]) -> List[Data]:
+        # Temporal crop
+        graphs_aug = random_temporal_crop(graphs, target_len)
+        # Add feature noise
+        graphs_aug = [add_feature_noise(g, noise_std) for g in graphs_aug]
+        return graphs_aug
+
+    return transform
+
 
 NormalizationType = Literal[
     "per_sample",
@@ -132,6 +152,11 @@ class VideoDataset(Dataset):
         for frame in frames:
             graphs_objects.append(build_object_graph(frame))
             graphs_joints.append(build_skeleton_graph(frame))
+
+        if self._transform is not None:
+            graphs_objects = self._transform(graphs_objects)
+            graphs_joints = self._transform(graphs_joints)
+
         if self._normalization_type == "across_frames":
             graphs_objects = self._normalize_graphs(graphs_objects)
             graphs_joints = self._normalize_graphs(graphs_joints)

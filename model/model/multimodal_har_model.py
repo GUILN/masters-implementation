@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
-from typing import Any, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 import torch
 import torch.nn as nn
 from torch_geometric.data import Data
@@ -34,6 +35,7 @@ class MultiModalHARModel(nn.Module):
             "num_classes": num_classes,
             "dropout": dropout,
         }
+        logger.info(f"Model configuration: {self._model_config}")
         self.obj_gat = GATBranch(
             obj_in,
             gat_hidden,
@@ -79,8 +81,8 @@ class MultiModalHARModel(nn.Module):
         x = torch.stack(frame_features, dim=2)  # [batch=1, features, T]
         x = self.temporal_model(x)
         # x, _ = torch.max(x, dim=-1)  # Global temporal pooling
-        # x = torch.mean(x, dim=-1)  # Global temporal pooling
-        x = self.attn_pool(x) # Temporal attention pooling
+        x = torch.mean(x, dim=-1)  # Global temporal pooling
+        # x = self.attn_pool(x) # Temporal attention pooling
         return self.classifier(x)
 
     def save(self, training_history: Optional[Any]) -> None:
@@ -98,3 +100,44 @@ class MultiModalHARModel(nn.Module):
             "model_config": self._model_config,
         }, save_path)
         logger.info("Model saved successfully.")
+
+    @classmethod
+    def load(
+        cls,
+        checkpoint_path: str,
+        device: str = "cpu"
+    ) -> Tuple["MultiModalHARModel", Dict[any, any]]:
+        """
+        Standalone function to load HAR model.
+
+        Args:
+            checkpoint_path: Path to the checkpoint file
+            device: Device to load on
+        Returns:
+            tuple: (model, checkpoint_data)
+        """
+        checkpoint_path = Path(checkpoint_path)
+        if not checkpoint_path.exists():
+            raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+
+        logger.info(f"Loading model from {checkpoint_path}...")
+
+        # Load checkpoint
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+
+        # Extract configuration
+        model_config = checkpoint.get('model_config')
+        if not model_config:
+            raise ValueError("Model configuration not found in checkpoint")
+
+        logger.info(f"Model config: {model_config}")
+
+        # Create and load model
+        model = MultiModalHARModel(**model_config)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model.to(device)
+        model.eval()  # Set to evaluation mode
+
+        logger.info("✅ Model loaded and ready for inference")
+
+        return model, checkpoint
