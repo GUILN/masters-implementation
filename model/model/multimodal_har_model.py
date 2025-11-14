@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 import torch
 import torch.nn as nn
 from torch_geometric.data import Data
@@ -12,6 +12,8 @@ from settings.global_settings import GlobalSettings
 from model.gat_branch import GATBranch
 
 logger = GlobalSettings.get_logger()
+
+PoolingType = Literal["min", "max", "attn_pool"]
 
 
 class MultiModalHARModel(nn.Module):
@@ -24,6 +26,7 @@ class MultiModalHARModel(nn.Module):
         temporal_hidden: int,
         num_classes: int,
         dropout: float = 0.1,
+        temporal_pooling: PoolingType = "max"
     ):
         super().__init__()
         self._model_config = {
@@ -34,8 +37,10 @@ class MultiModalHARModel(nn.Module):
             "temporal_hidden": temporal_hidden,
             "num_classes": num_classes,
             "dropout": dropout,
+            "temporal_pooling": temporal_pooling,
         }
         logger.info(f"Model configuration: {self._model_config}")
+        self._temporal_pooling = temporal_pooling
         self.obj_gat = GATBranch(
             obj_in,
             gat_hidden,
@@ -80,9 +85,16 @@ class MultiModalHARModel(nn.Module):
 
         x = torch.stack(frame_features, dim=2)  # [batch=1, features, T]
         x = self.temporal_model(x)
-        # x, _ = torch.max(x, dim=-1)  # Global temporal pooling
-        x = torch.mean(x, dim=-1)  # Global temporal pooling
-        # x = self.attn_pool(x) # Temporal attention pooling
+        
+        if self._temporal_pooling == "max":
+            x, _ = torch.max(x, dim=-1)  # Global temporal pooling
+        elif self._temporal_pooling == "min":
+            x, _ = torch.min(x, dim=-1)  # Global temporal pooling
+        elif self._temporal_pooling == "attn_pool":
+            x = self.attn_pool(x)  # Temporal attention pooling
+        else:
+            raise ValueError(f"Unknown temporal pooling type: {self._temporal_pooling}")
+        
         return self.classifier(x)
 
     def save(self, training_history: Optional[Any]) -> None:
@@ -91,7 +103,7 @@ class MultiModalHARModel(nn.Module):
 
         save_path = os.path.join(
             model_settings.model_save_dir,
-            f"har_model_{model_settings.model_version}_{model_settings.dataset_prefix}_{datetime.now()}.pht"
+            f"har_model_{model_settings.model_version}_{model_settings.dataset_prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pht"
         )
         logger.info(f"Saving model to {save_path}...")
         torch.save({
@@ -141,3 +153,32 @@ class MultiModalHARModel(nn.Module):
         logger.info("✅ Model loaded and ready for inference")
 
         return model, checkpoint
+
+    @torch.no_grad()
+    def forward_features(
+        self,
+        graphs_objects: List[Data],
+        graphs_joints: List[Data]
+    ) -> torch.Tensor:
+        """
+        Forward pass until the temporal pooling layer (before classification).
+        Returns a feature embedding for visualization (e.g., t-SNE).
+        """
+        self.eval()
+        frame_features = []
+        for G_obj, G_joint in zip(graphs_objects, graphs_joints):
+            v_obj = self.obj_gat(G_obj)
+            v_joint = self.joint_gat(G_joint)
+            frame_features.append(torch.cat([v_obj, v_joint], dim=-1))
+
+        x = torch.stack(frame_features, dim=2)  # [batch=1, features, T]
+        x = self.temporal_model(x)
+        if self._temporal_pooling == "max":
+            x, _ = torch.max(x, dim=-1)  # temporal pooling (same as in forward)
+        elif self._temporal_pooling == "min":
+            x, _ = torch.min(x, dim=-1)  # temporal pooling (same as in forward)
+        elif self._temporal_pooling == "attn_pool":
+            x = self.attn_pool(x)  # alternatively, use attention pooling
+        else:
+            raise ValueError(f"Unknown temporal pooling type: {self._temporal_pooling}") 
+        return x  # shape: [batch, temporal_hidden]
