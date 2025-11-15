@@ -5,8 +5,10 @@ from typing import Any, Dict, List, Literal, Optional, Tuple
 import torch
 import torch.nn as nn
 from torch_geometric.data import Data
+from model.multi_head_temporal_poolint import MultiHeadTemporalPooling
 from model.multi_temporal_graph_convolution import MultiTemporalGC
 from model.temporal_attention_pooling import TemporalAttentionPooling
+from model.temporal_transformer_block import TemporalTransformerBlock
 from settings.global_settings import GlobalSettings
 
 from model.gat_branch import GATBranch
@@ -61,8 +63,15 @@ class MultiModalHARModel(nn.Module):
             kernel_sizes=[3, 5, 7],
             dropout=dropout,
         )
+        
+        self.temporal_transformer = TemporalTransformerBlock(
+            channels=temporal_hidden,
+            num_heads=4,
+            dropout=dropout
+        )
 
-        self.attn_pool = TemporalAttentionPooling(temporal_hidden)
+        # self.attn_pool = TemporalAttentionPooling(temporal_hidden)
+        self.attn_pool = MultiHeadTemporalPooling(temporal_hidden)
 
         self.classifier = nn.Sequential(
             nn.Linear(temporal_hidden, 128),
@@ -85,6 +94,7 @@ class MultiModalHARModel(nn.Module):
 
         x = torch.stack(frame_features, dim=2)  # [batch=1, features, T]
         x = self.temporal_model(x)
+        x = self.temporal_transformer(x)
         
         if self._temporal_pooling == "max":
             x, _ = torch.max(x, dim=-1)  # Global temporal pooling
