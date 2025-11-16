@@ -79,12 +79,12 @@ class MultiModalHARModel(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(128, num_classes)
         )
-
-    def forward(
+        
+    def _forward_x(
         self,
         graphs_objects: List[Data],
-        graphs_joints: List[Data]
-    ):
+        graphs_joints: List[Data],
+    ) -> torch.Tensor:
         # Each is a list of T Data objects
         frame_features = []
         for G_obj, G_joint in zip(graphs_objects, graphs_joints):
@@ -104,7 +104,14 @@ class MultiModalHARModel(nn.Module):
             x = self.attn_pool(x)  # Temporal attention pooling
         else:
             raise ValueError(f"Unknown temporal pooling type: {self._temporal_pooling}")
-        
+        return x
+
+    def forward(
+        self,
+        graphs_objects: List[Data],
+        graphs_joints: List[Data]
+    ):
+        x = self._forward_x(graphs_objects, graphs_joints)
         return self.classifier(x)
 
     def save(self, training_history: Optional[Any]) -> None:
@@ -175,20 +182,4 @@ class MultiModalHARModel(nn.Module):
         Returns a feature embedding for visualization (e.g., t-SNE).
         """
         self.eval()
-        frame_features = []
-        for G_obj, G_joint in zip(graphs_objects, graphs_joints):
-            v_obj = self.obj_gat(G_obj)
-            v_joint = self.joint_gat(G_joint)
-            frame_features.append(torch.cat([v_obj, v_joint], dim=-1))
-
-        x = torch.stack(frame_features, dim=2)  # [batch=1, features, T]
-        x = self.temporal_model(x)
-        if self._temporal_pooling == "max":
-            x, _ = torch.max(x, dim=-1)  # temporal pooling (same as in forward)
-        elif self._temporal_pooling == "min":
-            x, _ = torch.min(x, dim=-1)  # temporal pooling (same as in forward)
-        elif self._temporal_pooling == "attn_pool":
-            x = self.attn_pool(x)  # alternatively, use attention pooling
-        else:
-            raise ValueError(f"Unknown temporal pooling type: {self._temporal_pooling}") 
-        return x  # shape: [batch, temporal_hidden]
+        return self._forward_x(graphs_objects, graphs_joints)
