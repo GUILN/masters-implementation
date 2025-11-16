@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 from settings.global_settings import GlobalSettings
 import torch.nn as nn
 from model.early_stopping import EarlyStopping, ESMode
+from torch.optim.lr_scheduler import LambdaLR
 
 
 logger = GlobalSettings.get_logger()
@@ -26,6 +27,20 @@ class EarlyStoppingParams:
     evaluation_function: Optional[EvaluationFunction] = None
     evaluation_dataset: Optional[VideoDataset] = None
 
+@dataclass
+class WarmupSchedulerParams:
+    use_warmup: bool = False
+    warmup_steps: int = 800
+
+
+def warmup_scheduler(
+    optimizer: torch.optim.Optimizer,
+    warmup_steps: int,
+) -> LambdaLR:
+    def fn(step):
+        return min(1.0, step / warmup_steps)
+    return LambdaLR(optimizer, lr_lambda=fn)
+
 
 def train(
     model: MultiModalHARModel,
@@ -36,6 +51,7 @@ def train(
     device: str = "cpu",
     weight_decay: Optional[float] = None,
     early_stopping: Optional[EarlyStoppingParams] = None,
+    warmup_scheduler_params: Optional[WarmupSchedulerParams] = None,
 ):
     logger.info("Starting training loop...")
     loader = DataLoader(
@@ -49,6 +65,7 @@ def train(
         model.parameters(),
         lr=lr,
     )
+    scheduler = warmup_scheduler(optimizer, warmup_steps=800 if warmup_scheduler_params is None else warmup_scheduler_params.warmup_steps)
     if weight_decay is not None:
         logger.info(f"Using weight decay: {weight_decay}")
         optimizer = torch.optim.Adam(
@@ -84,6 +101,8 @@ def train(
             loss = criterion(out, label)
             loss.backward()
             optimizer.step()
+            if warmup_scheduler_params is not None and warmup_scheduler_params.use_warmup:
+                scheduler.step()
 
             total_loss += loss.item()
         if es is not None:
