@@ -28,7 +28,10 @@ class MultiModalHARModel(nn.Module):
         temporal_hidden: int,
         num_classes: int,
         dropout: float = 0.1,
-        temporal_pooling: PoolingType = "max"
+        temporal_pooling: PoolingType = "max",
+        use_layer_norm: bool = False,
+        attention_pooling_heads: int = 4,
+        temporal_transformer_heads: int = 4,
     ):
         super().__init__()
         self._model_config = {
@@ -40,9 +43,13 @@ class MultiModalHARModel(nn.Module):
             "num_classes": num_classes,
             "dropout": dropout,
             "temporal_pooling": temporal_pooling,
+            "use_layer_norm": use_layer_norm,
+            "attention_pooling_heads": attention_pooling_heads,
+            "temporal_transformer_heads": temporal_transformer_heads,
         }
         logger.info(f"Model configuration: {self._model_config}")
         self._temporal_pooling = temporal_pooling
+        self._use_layer_norm = use_layer_norm
         self.obj_gat = GATBranch(
             obj_in,
             gat_hidden,
@@ -63,15 +70,19 @@ class MultiModalHARModel(nn.Module):
             kernel_sizes=[3, 5, 7],
             dropout=dropout,
         )
-        
+
+        self.pre_norm = nn.LayerNorm(temporal_hidden)
+
         self.temporal_transformer = TemporalTransformerBlock(
             channels=temporal_hidden,
-            num_heads=4,
+            num_heads=temporal_transformer_heads,
             dropout=dropout
         )
 
-        # self.attn_pool = TemporalAttentionPooling(temporal_hidden)
-        self.attn_pool = MultiHeadTemporalPooling(temporal_hidden)
+        self.attn_pool = MultiHeadTemporalPooling(
+            temporal_hidden,
+            num_heads=attention_pooling_heads,
+        )
 
         self.classifier = nn.Sequential(
             nn.Linear(temporal_hidden, 128),
@@ -94,8 +105,12 @@ class MultiModalHARModel(nn.Module):
 
         x = torch.stack(frame_features, dim=2)  # [batch=1, features, T]
         x = self.temporal_model(x)
+        if self._use_layer_norm:
+            x = x.permute(0, 2, 1)  # [B, T, C]
+            x = self.pre_norm(x)
+            x = x.permute(0, 2, 1)  # [B, C, T]
         x = self.temporal_transformer(x)
-        
+
         if self._temporal_pooling == "max":
             x, _ = torch.max(x, dim=-1)  # Global temporal pooling
         elif self._temporal_pooling == "min":

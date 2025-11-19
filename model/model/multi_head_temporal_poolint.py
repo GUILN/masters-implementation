@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class MultiHeadTemporalPooling(nn.Module):
     """
     Multi-head temporal attention pooling.
