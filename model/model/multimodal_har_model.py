@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Literal, Optional, Tuple
 import torch
 import torch.nn as nn
 from torch_geometric.data import Data
-from model.multi_head_temporal_poolint import MultiHeadTemporalPooling
+from model.multi_head_temporal_pooling import MultiHeadTemporalPooling
 from model.multi_temporal_graph_convolution import MultiTemporalGC
 from model.temporal_attention_pooling import TemporalAttentionPooling
 from model.temporal_transformer_block import TemporalTransformerBlock

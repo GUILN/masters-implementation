@@ -48,8 +48,8 @@ def train(
     epochs: int = 20,
     batch_size: int = 1,
     lr=1e-3,
-    device: str = "cpu",
     weight_decay: Optional[float] = None,
+    device: str = "cpu",
     early_stopping: Optional[EarlyStoppingParams] = None,
     warmup_scheduler_params: Optional[WarmupSchedulerParams] = None,
 ):
@@ -61,14 +61,14 @@ def train(
         collate_fn=lambda x: x
     )
     model.to(device)
-    optimizer = torch.optim.Adam(
+    optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=lr,
     )
     scheduler = warmup_scheduler(optimizer, warmup_steps=800 if warmup_scheduler_params is None else warmup_scheduler_params.warmup_steps)
     if weight_decay is not None:
         logger.info(f"Using weight decay: {weight_decay}")
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.AdamW(
             model.parameters(),
             lr=lr,
             weight_decay=weight_decay
