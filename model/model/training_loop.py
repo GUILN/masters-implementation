@@ -1,7 +1,7 @@
 
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Callable, Optional, cast
+from typing import Callable, Literal, Optional, cast
 import torch
 from tqdm import tqdm
 from dataset.video_dataset import VideoData, VideoDataset
@@ -26,6 +26,7 @@ class EarlyStoppingParams:
     mode: ESMode = 'max'  # 'max' for accuracy, 'min' for loss
     evaluation_function: Optional[EvaluationFunction] = None
     evaluation_dataset: Optional[VideoDataset] = None
+
 
 @dataclass
 class WarmupSchedulerParams:
@@ -52,6 +53,7 @@ def train(
     device: str = "cpu",
     early_stopping: Optional[EarlyStoppingParams] = None,
     warmup_scheduler_params: Optional[WarmupSchedulerParams] = None,
+    cross_entropy_label_smoothing: Optional[float] = None,
 ):
     logger.info("Starting training loop...")
     loader = DataLoader(
@@ -82,6 +84,11 @@ def train(
             delta=early_stopping.min_delta,
         )
     criterion = torch.nn.CrossEntropyLoss()
+    if cross_entropy_label_smoothing is not None:
+        logger.info(f"Using Label Smoothing Cross Entropy with smoothing={cross_entropy_label_smoothing}")
+        criterion = torch.nn.CrossEntropyLoss(label_smoothing=cross_entropy_label_smoothing)
+    else:
+        logger.info("Using standard Cross Entropy Loss")
     for epoch in range(epochs):
         model.train()
         total_loss = 0.0

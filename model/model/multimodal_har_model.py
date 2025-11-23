@@ -8,6 +8,7 @@ from torch_geometric.data import Data
 from model.multi_head_temporal_pooling import MultiHeadTemporalPooling
 from model.multi_temporal_graph_convolution import MultiTemporalGC
 from model.temporal_attention_pooling import TemporalAttentionPooling
+from model.temporal_encoder import TemporalEncoder
 from model.temporal_transformer_block import TemporalTransformerBlock
 from settings.global_settings import GlobalSettings
 
@@ -79,6 +80,11 @@ class MultiModalHARModel(nn.Module):
             dropout=dropout
         )
 
+        self.temporal_encoder = TemporalEncoder(
+            channels=temporal_hidden,
+            hidden=temporal_hidden,
+        )
+
         self.attn_pool = MultiHeadTemporalPooling(
             temporal_hidden,
             num_heads=attention_pooling_heads,
@@ -110,7 +116,7 @@ class MultiModalHARModel(nn.Module):
             x = self.pre_norm(x)
             x = x.permute(0, 2, 1)  # [B, C, T]
         x = self.temporal_transformer(x)
-
+        x = self.temporal_encoder(x)
         if self._temporal_pooling == "max":
             x, _ = torch.max(x, dim=-1)  # Global temporal pooling
         elif self._temporal_pooling == "min":
