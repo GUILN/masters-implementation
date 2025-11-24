@@ -33,6 +33,8 @@ class MultiModalHARModel(nn.Module):
         use_layer_norm: bool = False,
         attention_pooling_heads: int = 4,
         temporal_transformer_heads: int = 4,
+        use_object_branch: bool = True,
+        device: str = "cpu",
     ):
         super().__init__()
         self._model_config = {
@@ -47,10 +49,14 @@ class MultiModalHARModel(nn.Module):
             "use_layer_norm": use_layer_norm,
             "attention_pooling_heads": attention_pooling_heads,
             "temporal_transformer_heads": temporal_transformer_heads,
+            "use_object_branch": use_object_branch,
+            "device": device,
         }
         logger.info(f"Model configuration: {self._model_config}")
         self._temporal_pooling = temporal_pooling
         self._use_layer_norm = use_layer_norm
+        self._use_object_branch = use_object_branch
+        self._device = device
         self.obj_gat = GATBranch(
             obj_in,
             gat_hidden,
@@ -105,9 +111,12 @@ class MultiModalHARModel(nn.Module):
         # Each is a list of T Data objects
         frame_features = []
         for G_obj, G_joint in zip(graphs_objects, graphs_joints):
-            v_obj = self.obj_gat(G_obj)
             v_joint = self.joint_gat(G_joint)
-            frame_features.append(torch.cat([v_obj, v_joint], dim=-1))
+            if self._use_object_branch:
+                v_obj = self.obj_gat(G_obj)
+                frame_features.append(torch.cat([v_obj, v_joint], dim=-1))
+            else:
+                frame_features.append(v_joint)
 
         x = torch.stack(frame_features, dim=2)  # [batch=1, features, T]
         x = self.temporal_model(x)
