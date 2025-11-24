@@ -70,9 +70,9 @@ class MultiModalHARModel(nn.Module):
             pooling="max",
             dropout=dropout,
         )
-
+        temporal_in_channels = gat_out * 2 if use_object_branch else gat_out
         self.temporal_model = MultiTemporalGC(
-            in_channels=gat_out * 2,
+            in_channels=temporal_in_channels,
             out_channels=temporal_hidden,
             kernel_sizes=[3, 5, 7],
             dropout=dropout,
