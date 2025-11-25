@@ -6,12 +6,10 @@ CONFIG_FILE = config.ini
 SECRETS_FILE = secrets.ini
 
 # Versioning Variables
-MODEL_VERSION = v0.0.1
+MODEL_VERSION = v1.0.1
 VERSION_MSG = "Release $(MODEL_VERSION): Regularization Strategies\n\
 Features:\n\
-- Dropout Layer\n\
-- Split test / validation\n\
-- Add early stopping validation"
+- temporal modeling - final implementation"
 
 
 # Default target
