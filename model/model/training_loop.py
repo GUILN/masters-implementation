@@ -1,7 +1,7 @@
 
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Callable, Optional, cast
+from typing import Callable, Literal, Optional, cast
 import torch
 from tqdm import tqdm
 from dataset.video_dataset import VideoData, VideoDataset
@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 from settings.global_settings import GlobalSettings
 import torch.nn as nn
 from model.early_stopping import EarlyStopping, ESMode
+from torch.optim.lr_scheduler import LambdaLR
 
 
 logger = GlobalSettings.get_logger()
@@ -27,15 +28,32 @@ class EarlyStoppingParams:
     evaluation_dataset: Optional[VideoDataset] = None
 
 
+@dataclass
+class WarmupSchedulerParams:
+    use_warmup: bool = False
+    warmup_steps: int = 800
+
+
+def warmup_scheduler(
+    optimizer: torch.optim.Optimizer,
+    warmup_steps: int,
+) -> LambdaLR:
+    def fn(step):
+        return min(1.0, step / warmup_steps)
+    return LambdaLR(optimizer, lr_lambda=fn)
+
+
 def train(
     model: MultiModalHARModel,
     video_dataset: VideoDataset,
     epochs: int = 20,
     batch_size: int = 1,
     lr=1e-3,
-    device: str = "cpu",
     weight_decay: Optional[float] = None,
+    device: str = "cpu",
     early_stopping: Optional[EarlyStoppingParams] = None,
+    warmup_scheduler_params: Optional[WarmupSchedulerParams] = None,
+    cross_entropy_label_smoothing: Optional[float] = None,
 ):
     logger.info("Starting training loop...")
     loader = DataLoader(
@@ -45,13 +63,14 @@ def train(
         collate_fn=lambda x: x
     )
     model.to(device)
-    optimizer = torch.optim.Adam(
+    optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=lr,
     )
+    scheduler = warmup_scheduler(optimizer, warmup_steps=800 if warmup_scheduler_params is None else warmup_scheduler_params.warmup_steps)
     if weight_decay is not None:
         logger.info(f"Using weight decay: {weight_decay}")
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.AdamW(
             model.parameters(),
             lr=lr,
             weight_decay=weight_decay
@@ -65,6 +84,11 @@ def train(
             delta=early_stopping.min_delta,
         )
     criterion = torch.nn.CrossEntropyLoss()
+    if cross_entropy_label_smoothing is not None:
+        logger.info(f"Using Label Smoothing Cross Entropy with smoothing={cross_entropy_label_smoothing}")
+        criterion = torch.nn.CrossEntropyLoss(label_smoothing=cross_entropy_label_smoothing)
+    else:
+        logger.info("Using standard Cross Entropy Loss")
     for epoch in range(epochs):
         model.train()
         total_loss = 0.0
@@ -84,6 +108,8 @@ def train(
             loss = criterion(out, label)
             loss.backward()
             optimizer.step()
+            if warmup_scheduler_params is not None and warmup_scheduler_params.use_warmup:
+                scheduler.step()
 
             total_loss += loss.item()
         if es is not None:
