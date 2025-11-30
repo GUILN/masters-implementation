@@ -104,13 +104,12 @@ class VideoDataset(Dataset):
         video_data_loader: VideoDataLoader,
         normalization_type: NormalizationType = "no_normalization",
         transform: Optional[Transform] = None,
-        T: Optional[int] = None,
+        EAR_ratio: Optional[float] = 1.0,
         normalization_stats: Optional[NormalizationStats] = None,
     ):
         self._video_data_loader = video_data_loader
         self._transform = transform
-        self._T = T
-        self._user_all_frames = False if T is not None else True
+        self._EAR_ratio = EAR_ratio
         self._item_cache: Dict[int, VideoData] = {}
         self._labels_map: Dict[str, int] = {}
         self._labels_counter = 0
@@ -125,6 +124,9 @@ class VideoDataset(Dataset):
     @property
     def labels_map(self) -> Dict[str, int]:
         return self._labels_map
+
+    def set_ear_ratio(self, ratio: float) -> None:
+        self._EAR_ratio = ratio
 
     def get_label_name_from_label_value(
         self,
@@ -146,8 +148,9 @@ class VideoDataset(Dataset):
         frames = video.frames
         graphs_objects: List[Data] = []
         graphs_joints: List[Data] = []
-        if not self._user_all_frames:
-            frames = frames[:self._T]
+        if self._EAR_ratio < 1.0:
+            num_frames = max(1, int(len(frames) * self._EAR_ratio))
+            frames = frames[:num_frames]
 
         for frame in frames:
             graphs_objects.append(build_object_graph(frame))

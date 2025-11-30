@@ -144,13 +144,19 @@ class MultiModalHARModel(nn.Module):
         x = self._forward_x(graphs_objects, graphs_joints)
         return self.classifier(x)
 
-    def save(self, training_history: Optional[Any]) -> None:
+    def save(
+        self,
+        training_history: Optional[Any],
+        EAR_ratio: float = 1.0,
+        with_object_branch: bool = True,
+    ) -> None:
         model_settings = GlobalSettings.get_config().model_settings
         os.makedirs(model_settings.model_save_dir, exist_ok=True)
 
+        object_branch_str = "with_obj" if with_object_branch else "no_obj"
         save_path = os.path.join(
             model_settings.model_save_dir,
-            f"har_model_{model_settings.model_version}_{model_settings.dataset_prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pht"
+            f"har_model_{model_settings.model_version}_{model_settings.dataset_prefix}_{int(EAR_ratio * 100)}_{object_branch_str}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pht"
         )
         logger.info(f"Saving model to {save_path}...")
         torch.save({
