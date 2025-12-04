@@ -4,6 +4,7 @@
 PYTHON = python
 CLI_SCRIPT = cli_extract.py
 SKELETON_CLI_SCRIPT = cli_extract_skeleton.py
+IMAGE_TO_VISUALIZE = "/home/guilherme/Mestrado/masters-implementation/data_retrieval/data/output/unsafe_net/Video Dataset for Safe and Unsafe Behaviours/Safe and Unsafe Behaviours Dataset/test/1_unauthorized_intervention/1_te2_frames/1_te2_frame_000000.jpg"
 CONFIG_FILE = config.ini
 
 # Default target
@@ -76,7 +77,7 @@ run-cli-skeleton:
 .PHONY: visualize-skeleton
 visualize-skeleton:
 	@echo "Visualizing skeleton"
-	$(PYTHON) $(SKELETON_CLI_SCRIPT) --visualize --verbose
+	$(PYTHON) $(SKELETON_CLI_SCRIPT) --visualize $(IMAGE_TO_VISUALIZE) --verbose
 
 
 

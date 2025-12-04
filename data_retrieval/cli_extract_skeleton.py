@@ -58,9 +58,9 @@ def create_parser() -> argparse.ArgumentParser:
         help='Show what would be processed without actually processing'
     )
     parser.add_argument(
-        '--visualize',
-        action='store_true',
-        help='Visualize extracted skeleton data on a sample frame'
+        '--visualize', 
+        type=str,
+        help='Visualize extracted skeleton data on a sample frame - provide path to the frame image'
     )
     return parser
 
@@ -79,9 +79,9 @@ def override_config(config: ExtractionConfig, args: argparse.Namespace) -> None:
 def setup_logging(config: ExtractionConfig) -> ApplicationLogger:
     return CommonSetup.get_logger()
 
-def visualize_extracted_data(config: ExtractionConfig, logger: ApplicationLogger):
-    logger.info("Visualizing extracted skeleton data...")
-    input_file = "/home/guilherme/Mestrado/masters-implementation/data_retrieval/data/output/nw_ucla/multiview_action_videos/a03/v01_s02_e02_frames/v01_s02_e02_frame_000002.jpg"
+def visualize_extracted_data(config: ExtractionConfig, logger: ApplicationLogger, frame_image_path: str):
+    logger.info(f"Visualizing extracted skeleton data from {frame_image_path}...")
+    input_file = frame_image_path
     detection_pipeline = DetectionPipeline(conf_threshold=0.05)
     detection_pipeline.run_detection_pipeline(
         image_path=input_file,
@@ -95,7 +95,7 @@ def visualize_extracted_data(config: ExtractionConfig, logger: ApplicationLogger
 
 def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
     object_settings = config.object_extraction_settings
-    dataset_type = DatasetType.NW_UCLA
+    dataset_type = DatasetType.UNSAFE_NET
     logger.info("Extracting skeleton data...")
 
     logger.info(f"Using model: {object_settings['model_path']}")
@@ -129,7 +129,7 @@ def main() -> None:
         logger = setup_logging(config)
         override_config(config, args)
         if args.visualize:
-            visualize_extracted_data(config, logger)
+            visualize_extracted_data(config, logger, args.visualize)
             return
 
         logger.info("Current Configuration:")
