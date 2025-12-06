@@ -43,10 +43,24 @@ class UnsafeNetPathManager(DatasetPathManagerInterface):
         Extracts a unique video ID from the video path.
         For Unsafe Net, this could be the relative path from base_path without extension.
         """
+        logger.info(f"[UnsafeNetPathManager] getting videos from {self._base_path} and saving to {self._base_output_path}")
         videos_frames_paths: List[VideoFramesPath] = []
-        for action in os.scandir(self._base_path):
+        for video_set_folder in ["train", "test"]:
+            logger.info(f"Processing video set folder: {video_set_folder}")
+            videos_frames_paths.extend(
+               self.get_video_frames_path_from_action_dir(
+                   action_dir=os.path.join(self._base_path, video_set_folder),
+                   video_set=video_set_folder,
+               )
+           ) 
+        return videos_frames_paths
+    
+    def get_video_frames_path_from_action_dir(self, action_dir: str, video_set: str) -> List[VideoFramesPath]:
+        logger.info(f"[UnsafeNetPathManager] Getting video frames paths from action directory: {action_dir}")
+        videos_frames_paths: List[VideoFramesPath] = []
+        for action in os.scandir(action_dir):
             if action.is_dir():
-                logger.info(f"getting videos for action {action.name}")
+                logger.info(f"[UnsafeNetPathManager] getting videos for action {action.name}")
                 for video in os.scandir(action.path):
                     if video.is_dir():
                         frames_paths: List[str] = []
@@ -68,6 +82,7 @@ class UnsafeNetPathManager(DatasetPathManagerInterface):
                         video_frame_path = VideoFramesPath(
                             video_id=video.name,
                             frames_path=frames_paths,
+                            sub_set=video_set,
                         )
                         videos_frames_paths.append(video_frame_path)
         return videos_frames_paths

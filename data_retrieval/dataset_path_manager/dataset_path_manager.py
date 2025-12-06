@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
 
 @dataclass
@@ -13,6 +13,8 @@ class VideoPath:
 class VideoFramesPath:
     video_id: str
     frames_path: List[str]
+    # this one is to indicate the set, like: test | validation | train
+    sub_set: Optional[str] = None
 
 class DatasetPathManagerInterface(ABC):
     """

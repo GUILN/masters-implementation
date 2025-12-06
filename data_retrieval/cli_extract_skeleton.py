@@ -133,8 +133,8 @@ def main() -> None:
             return
 
         logger.info("Current Configuration:")
-        logger.info(f"  Input directory: {config.frame_extraction_settings['input_dir']}")
-        logger.info(f"  Output directory: {config.frame_extraction_settings['output_dir']}")
+        logger.info(f"  Input directory: {config.object_extraction_settings['input_dir']}")
+        logger.info(f"  Output directory: {config.object_extraction_settings['output_dir']}")
         logger.info(f"  Batch size: {config.frame_extraction_settings['batch_size']}")
 
         skeleton_settings = config.skeleton_extraction_settings

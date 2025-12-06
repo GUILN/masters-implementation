@@ -247,6 +247,13 @@ class DetectionPipeline:
                 video_category,
                 f"{video.video_id}_videos.json"
             )
+            if frames_path.sub_set is not None:
+                output_file = os.path.join(
+                    output_dir,
+                    frames_path.sub_set,
+                    video_category,
+                    f"{video.video_id}_videos.json"
+                )   
             logger.info(f"Saving video to {output_file}...")
             save_video_to_json(video, output_file)
             logger.info(f"Just processed video {video.video_id}")
