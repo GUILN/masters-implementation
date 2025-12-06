@@ -244,7 +244,7 @@ def extract_objects_data(config: ExtractionConfig, logger) -> str:
 def extract_frames_data(config: ExtractionConfig, logger) -> str:
     """Extract frames from a video file."""
     frame_settings = config.frame_extraction_settings
-    dataset_type = DatasetType.NW_UCLA
+    dataset_type = DatasetType.UNSAFE_NET
     
     logger.info("starting frame extraction")
     logger.info(f"Frame rate per second: {frame_settings['frame_rate_per_second']}")
@@ -261,9 +261,6 @@ def extract_frames_data(config: ExtractionConfig, logger) -> str:
     
     logger.info("getting videos path...")    
     videos_paths = dataset_path_manager.get_videos_path()
-    logger.info(f"Found {len(videos_paths)} videos to process.")
-    for video_path in videos_paths:
-        logger.debug(f"Found video path: {video_path}")
 
     logger.info("Starting frame extraction")
     frame_retriever = FrameRetriever(
@@ -273,7 +270,7 @@ def extract_frames_data(config: ExtractionConfig, logger) -> str:
     try:
         # get time
         start_time = time.time()
-        logger.info(f"Running {len(videos_paths)} tasks in parallel using {os.cpu_count()} workers.")
+        logger.info(f"Running tasks in parallel using {os.cpu_count()} workers.")
         with mp.Pool(processes=os.cpu_count()) as pool:
             results = pool.starmap(frame_retriever.extract_frames, [(video_path.video_path, video_path.output_path + "_frames") for video_path in videos_paths])
         logger.info(f"Parallel execution completed. Processed {len(results)} results.")
