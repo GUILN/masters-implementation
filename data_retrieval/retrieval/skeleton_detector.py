@@ -176,7 +176,7 @@ class DetectionPipeline:
             person_bbox=person_bboxes[0],
         )
         logger.debug("built skeleton")
-        
+
         zipped = zip(
             filtered_objects.pred_instances.labels,
             filtered_objects.pred_instances.bboxes,
