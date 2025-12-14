@@ -100,7 +100,7 @@ class DetectionPipeline:
         pose_checkpoint = '/home/guilherme/Mestrado/masters-implementation/data_retrieval/retrieval/config/checkpoints/hrnet_w32_coco_256x192-c78dce93_20200708.pth',
         conf_threshold = 0.3,
         max_per_class=2,
-        top_k_objects=10,
+        top_k_objects=3,
     ):
         self.object_detector = ObjectDetector(det_config, det_checkpoint)
         self.pose_detector = PoseDetector(pose_config, pose_checkpoint)
@@ -174,6 +174,7 @@ class DetectionPipeline:
         filtered_objects = filter_nearest_objects(
             pred_instances=instances,
             person_bbox=person_bboxes[0],
+            top_k=self._top_k_objects,
         )
         logger.debug("built skeleton")
 

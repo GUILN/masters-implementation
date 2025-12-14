@@ -70,4 +70,6 @@ def filter_nearest_objects(
     filtered_result.pred_instances = filtered_instances
 
     logger.info(f"Filtering complete. Kept {len(keep_indices)} objects.")
+    for k_idx in keep_indices:
+        logger.info(f"Kept object - Class: {labels[k_idx]}, Score: {scores[k_idx]}")
     return filtered_result

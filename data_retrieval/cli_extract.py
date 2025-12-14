@@ -169,7 +169,7 @@ def extract_objects_data(config: ExtractionConfig, logger) -> str:
     Extract object detection data from a video file.
     """
     object_settings = config.object_extraction_settings
-    dataset_type = DatasetType.NW_UCLA
+    dataset_type = DatasetType.NTU_RGB_D
     
     logger.info(f"Using model: {object_settings['model_path']}")
     logger.info(f"Confidence threshold: {object_settings['confidence_threshold']}")
