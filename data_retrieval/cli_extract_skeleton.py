@@ -95,7 +95,7 @@ def visualize_extracted_data(config: ExtractionConfig, logger: ApplicationLogger
 
 def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
     object_settings = config.object_extraction_settings
-    dataset_type = DatasetType.UNSAFE_NET
+    dataset_type = DatasetType.NTU_RGB_D
     logger.info("Extracting skeleton data...")
 
     logger.info(f"Using model: {object_settings['model_path']}")

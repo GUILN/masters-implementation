@@ -244,7 +244,7 @@ def extract_objects_data(config: ExtractionConfig, logger) -> str:
 def extract_frames_data(config: ExtractionConfig, logger) -> str:
     """Extract frames from a video file."""
     frame_settings = config.frame_extraction_settings
-    dataset_type = DatasetType.UNSAFE_NET
+    dataset_type = DatasetType.NTU_RGB_D
     
     logger.info("starting frame extraction")
     logger.info(f"Frame rate per second: {frame_settings['frame_rate_per_second']}")
@@ -260,7 +260,7 @@ def extract_frames_data(config: ExtractionConfig, logger) -> str:
     logger.info(f"Dataset path manager created: {type(dataset_path_manager).__name__}") 
     
     logger.info("getting videos path...")    
-    videos_paths = dataset_path_manager.get_videos_path()
+    # videos_paths = dataset_path_manager.get_videos_path()
 
     logger.info("Starting frame extraction")
     frame_retriever = FrameRetriever(
@@ -271,9 +271,16 @@ def extract_frames_data(config: ExtractionConfig, logger) -> str:
         # get time
         start_time = time.time()
         logger.info(f"Running tasks in parallel using {os.cpu_count()} workers.")
-        with mp.Pool(processes=os.cpu_count()) as pool:
-            results = pool.starmap(frame_retriever.extract_frames, [(video_path.video_path, video_path.output_path + "_frames") for video_path in videos_paths])
-        logger.info(f"Parallel execution completed. Processed {len(results)} results.")
+        for video_path in dataset_path_manager.get_videos_path():
+            logger.info(f"Processing video: {video_path.video_path}...")
+            frame_retriever.extract_frames(
+                video_path.video_path,
+                video_path.output_path + "_frames"
+            )
+        # with mp.Pool(processes=os.cpu_count()) as pool:
+        #    results = pool.starmap(frame_retriever.extract_frames, [(video_path.video_path, video_path.output_path + "_frames") 
+        #                                                             for video_path in dataset_path_manager.get_videos_path()])
+        # logger.info(f"Parallel execution completed. Processed {len(results)} results.")
         # start timer
         elapsed_time = time.time() - start_time
         logger.info(f"Frame extraction completed in {elapsed_time:.2f} seconds.")
