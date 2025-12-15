@@ -72,7 +72,7 @@ run-cli-objects:
 .PHONY: run-cli-skeleton
 run-cli-skeleton:
 	@echo "Running CLI with skeleton extraction..."
-	$(PYTHON) $(SKELETON_CLI_SCRIPT) --verbose
+	$(PYTHON) $(SKELETON_CLI_SCRIPT) --verbose $(ARGS)
 
 .PHONY: visualize-skeleton
 visualize-skeleton:

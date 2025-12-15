@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Iterator, List, Optional
 
 
 @dataclass
@@ -15,6 +15,7 @@ class VideoFramesPath:
     frames_path: List[str]
     # this one is to indicate the set, like: test | validation | train
     sub_set: Optional[str] = None
+    video_category: Optional[str] = None
 
 class DatasetPathManagerInterface(ABC):
     """
@@ -23,9 +24,12 @@ class DatasetPathManagerInterface(ABC):
     to retrieve paths will vary.
     """
     @abstractmethod
-    def get_videos_path(self) -> List[VideoPath]:
+    def get_videos_path(self) -> Iterator[VideoPath]:
         pass
     
     @abstractmethod
-    def get_frames_path(self) -> List[VideoFramesPath]:
+    def get_frames_path(
+        self,
+        actions_filter: Optional[List[str]] = None
+    ) -> Iterator[VideoFramesPath]:
         pass

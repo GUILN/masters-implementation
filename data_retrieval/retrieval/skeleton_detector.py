@@ -1,4 +1,6 @@
 import json
+
+from pyparsing import Optional
 from common_setup import CommonSetup
 from dataset_path_manager.dataset_path_manager import DatasetPathManagerInterface
 from mmpose.apis import init_model, inference_topdown
@@ -14,7 +16,7 @@ from mmpose.utils import register_all_modules as register_pose_modules
 from mmdet.utils import register_all_modules as register_det_modules
 from mmengine.registry import DefaultScope
 from mmengine.structures import InstanceData
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Optional as TypingOptional
 import os
 
 class FrameInfo(NamedTuple):
@@ -210,12 +212,17 @@ class DetectionPipeline:
         self,
         path_manager: DatasetPathManagerInterface,
         output_dir: str,
+        actions_filter: TypingOptional[List[str]] = None,
     ):
-        frames_path_list = path_manager.get_frames_path()
-        logger.info(f"Processing {len(frames_path_list)} frames...")
+        logger.info("Processing frames...")
         videos_processed = 0
-        for frames_path in frames_path_list:
-            video_category = frames_path.frames_path[0].split(os.sep)[-3]
+        for frames_path in path_manager.get_frames_path(
+            actions_filter=actions_filter
+        ):
+            if frames_path.video_category is not None:
+                video_category = frames_path.video_category
+            else:
+                video_category = frames_path.frames_path[0].split(os.sep)[-3]
             video = Video(
                 video_id=frames_path.video_id,
                 category=video_category,

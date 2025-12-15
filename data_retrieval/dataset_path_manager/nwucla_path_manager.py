@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 from common_setup import CommonSetup
 from dataset_path_manager.dataset_path_manager import (
     DatasetPathManagerInterface, VideoFramesPath, VideoPath
@@ -47,7 +47,10 @@ class NwUclaPathManager(DatasetPathManagerInterface):
                 ))
         return video_paths
 
-    def get_frames_path(self) -> List[VideoFramesPath]:
+    def get_frames_path(
+        self,
+        actions_filter: Optional[List[str]] = None
+    ) -> List[VideoFramesPath]:
         """
         Extracts a unique video ID from the video path.
         For NW-UCLA, this could be the relative path from base_path without extension.

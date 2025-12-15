@@ -7,6 +7,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import List, Optional
 from common_setup import CommonSetup
 from config_manager import ExtractionConfig
 from app_logging.application_logger import ApplicationLogger
@@ -62,6 +63,12 @@ def create_parser() -> argparse.ArgumentParser:
         type=str,
         help='Visualize extracted skeleton data on a sample frame - provide path to the frame image'
     )
+    parser.add_argument(
+       '--actions', '-a',
+       nargs='+',
+       help='Filter by specific actions during extraction',
+       default=None,
+    )
     return parser
 
 def override_config(config: ExtractionConfig, args: argparse.Namespace) -> None:
@@ -93,7 +100,11 @@ def visualize_extracted_data(config: ExtractionConfig, logger: ApplicationLogger
         )
     )
 
-def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
+def extract_skeleton_data(
+    config: ExtractionConfig,
+    logger: ApplicationLogger,
+    actions_filter: Optional[List[str]] = None
+):
     object_settings = config.object_extraction_settings
     dataset_type = DatasetType.NTU_RGB_D
     logger.info("Extracting skeleton data...")
@@ -116,6 +127,7 @@ def extract_skeleton_data(config: ExtractionConfig, logger: ApplicationLogger):
     detection_pipeline.extract_video_frames(
         path_manager=dataset_path_manager,
         output_dir=config.object_extraction_settings['output_dir'],
+        actions_filter=actions_filter,
     )
     logger.info("Finished to process video frames")
 
@@ -141,7 +153,11 @@ def main() -> None:
         logger.info(f"  Confidence threshold: {skeleton_settings['confidence_threshold']}")
         logger.info(f"  Max persons: {skeleton_settings['max_persons']}")
 
-        extract_skeleton_data(config, logger)
+        actions_filter = None
+        if args.actions:
+            actions_filter = [a.upper() for a in args.actions]
+            logger.info(f"  Actions filter: {actions_filter}")
+        extract_skeleton_data(config, logger, actions_filter=actions_filter)
 
         if args.dry_run:
             logger.info("Dry run mode - no actual processing will occur")
