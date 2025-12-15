@@ -4,7 +4,7 @@
 PYTHON = python
 CLI_SCRIPT = cli_extract.py
 SKELETON_CLI_SCRIPT = cli_extract_skeleton.py
-IMAGE_TO_VISUALIZE = "/home/guilherme/Mestrado/masters-implementation/data_retrieval/data/output/ntu_rgb_d_60/nturgbd_rgb_s013/nturgb+d_rgb/S013C003P037R001A033_rgb_frames/S013C003P037R001A033_rgb_frame_000004.jpg"
+IMAGE_TO_VISUALIZE = "/home/guilherme/Mestrado/masters-implementation/data_retrieval/data/output/ntu_rgb_d_60/nturgbd_rgb_s008/nturgb+d_rgb/S008C003P035R001A032_rgb_frames/S008C003P035R001A032_rgb_frame_000010.jpg"
 CONFIG_FILE = config.ini
 
 # Default target
