@@ -22,6 +22,7 @@ class Command(str, Enum):
     TEST_SENTRY = "test-sentry"
     TEST_VIDEO_DATALOADER = "test-video-dataloader"
     SPLIT_NWUCLA_DATASET = "split-nwucla-dataset"
+    SPLIT_NTU_RGBD_DATASET = "split-ntu-rgbd-dataset"
 
     @classmethod
     def create_from_str(cls, value: str) -> "Command":
