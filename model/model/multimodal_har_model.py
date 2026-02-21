@@ -124,8 +124,8 @@ class MultiModalHARModel(nn.Module):
             x = x.permute(0, 2, 1)  # [B, T, C]
             x = self.pre_norm(x)
             x = x.permute(0, 2, 1)  # [B, C, T]
-        x = self.temporal_transformer(x)
-        x = self.temporal_encoder(x)
+        # x = self.temporal_transformer(x) -- Not part of methodology, only for testing purposes
+        # x = self.temporal_encoder(x) -- Not part of methodology, only for testing purposes
         if self._temporal_pooling == "max":
             x, _ = torch.max(x, dim=-1)  # Global temporal pooling
         elif self._temporal_pooling == "min":
