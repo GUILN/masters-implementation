@@ -20,6 +20,7 @@ help:
 	@echo "	test-video-dataloader	-> Tests that videos are being loaded"
 	@echo "	version-model-git	-> Versions the model"
 	@echo "	split-nwucla-dataset	-> Splits nwucla into train and test datasets"
+	@echo "	split-ntu-rgbd-dataset	-> Splits ntu-rgbd into train and test datasets"
 	@echo "	help-cli	-> Shows cli help"
 
 
@@ -56,4 +57,10 @@ version-model-git:
 split-nwucla-dataset:
 	@echo "Testing Sentry..."
 	$(PYTHON) $(CLI_SCRIPT) split-nwucla-dataset --verbose
+
+.PHONY: split-nwucla-dataset
+split-ntu-rgbd-dataset:
+	@echo "Splitting NTU RGB+D"
+	$(PYTHON) $(CLI_SCRIPT) split-ntu-rgbd-dataset --verbose
+
 

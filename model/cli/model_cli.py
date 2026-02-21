@@ -3,6 +3,7 @@ from pathlib import Path
 
 
 
+
 # Add the parent directory to the Python path first
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -26,6 +27,11 @@ try:
     from dataset.nwucla.nwucla_scripts import NWUCLADatasetScripts
 except ImportError:
     from nwucla_scripts import NWUCLADatasetScripts
+    
+try:
+    from dataset.nwucla.ntu_rgbd_scripts import NTURGBDDatasetScripts
+except ImportError:
+    from ntu_rgbd_scripts import NTURGBDDatasetScripts
 
 # Loading CLI arguments and configuration
 print("Loading CLI arguments and configuration...")  # Debug statement
@@ -64,9 +70,19 @@ def test_video_dataloader():
 def split_nwucla_dataset():
     NWUCLADatasetScripts.split_dataset(
         str(model_config.model_settings.video_data_dir),
+        split_ratio=0.8,
+        first_dataset="train",
+        second_dataset="test",
+    )
+
+
+def split_ntu_rgbd_dataset():
+    NTURGBDDatasetScripts.split_dataset(
+        str(model_config.model_settings.video_data_dir) + "/test",
         split_ratio=0.5,
         first_dataset="test",
         second_dataset="validation",
+        shuffle=True,
     )
 
 
@@ -82,6 +98,8 @@ def main():
         test_video_dataloader()
     elif args.command == Command.SPLIT_NWUCLA_DATASET:
         split_nwucla_dataset()
+    elif args.command == Command.SPLIT_NTU_RGBD_DATASET:
+        split_ntu_rgbd_dataset()
 
 
 if __name__ == "__main__":
